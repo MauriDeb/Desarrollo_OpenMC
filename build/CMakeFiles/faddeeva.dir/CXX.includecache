@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/mauricio/openmc-qt/openmc/vendor/faddeeva/Faddeeva.cc
+config.h
+/home/mauricio/openmc-qt/openmc/vendor/faddeeva/config.h
+config.h
+/home/mauricio/openmc-qt/openmc/vendor/faddeeva/config.h
+Faddeeva.hh
+/home/mauricio/openmc-qt/openmc/vendor/faddeeva/Faddeeva.hh
+cfloat
+-
+cmath
+-
+limits
+-
+Faddeeva.h
+/home/mauricio/openmc-qt/openmc/vendor/faddeeva/Faddeeva.h
+float.h
+-
+math.h
+-
+cstdio
+-
+stdio.h
+-
+
+/home/mauricio/openmc-qt/openmc/vendor/faddeeva/Faddeeva.hh
+complex
+-
+
