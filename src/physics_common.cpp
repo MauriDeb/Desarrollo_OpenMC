@@ -8,7 +8,7 @@ namespace openmc {
 //==============================================================================
 // RUSSIAN_ROULETTE
 //==============================================================================
-
+/*
 void russian_roulette(Particle* p)
 {
   if (p->wgt_ < settings::weight_cutoff) {
@@ -22,8 +22,9 @@ void russian_roulette(Particle* p)
     }
   }
 }
+*/
 
-void russian_roulette_importance(Particle* p)
+void russian_roulette(Particle* p)
 {
   if (p->wgt_ < settings::weight_cutoff / p->imp_ ) {
     if (prn() < p->wgt_ * p->imp_ / settings::weight_survive) {
@@ -37,12 +38,12 @@ void russian_roulette_importance(Particle* p)
   }
 }
 
-void russian_roulette_weight_window(Particle* p, double weight_cutoff, double weight_survive)
+void russian_roulette_weight_window(Particle* p)
 {
-  if (p->wgt_ < weight_cutoff) {
-    if (prn() < p->wgt_ / weight_survive) {
-      p->wgt_ = weight_survive;
+  if (p->wgt_ < p->lower_weight_) {
+    if (prn() < p->wgt_ / p->survival_weight_) {
       p->wgt_last_ = p->wgt_;
+      p->wgt_ = p->survival_weight_;
     } else {
       p->wgt_ = 0.;
       p->wgt_last_ = 0.;

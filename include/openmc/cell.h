@@ -170,11 +170,11 @@ public:
   std::vector<double> importance_;
 
   //! Define variables for weight window variance reduction method.
-  double lower_weight_;
-  double const_upp_weight_;
-  double const_surv_;
-  double upper_weight_;
-  double survival_weight_;
+  std::vector<double> lower_weight_;
+  std::vector<double> const_upp_weight_;
+  std::vector<double> const_surv_;
+  std::vector<double> upper_weight_;
+  std::vector<double> survival_weight_;
 
   //! Definition of spatial region as Boolean expression of half-spaces
   std::vector<std::int32_t> region_;

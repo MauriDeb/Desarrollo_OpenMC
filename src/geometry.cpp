@@ -200,7 +200,7 @@ find_cell_inner(Particle* p, const NeighborList* neighbor_list)
               russian_roulette_weight_window(p, c.lower_weight_, c.survival_weight_);
           }
       }
-*/
+
       // p es un puntero a una clase publica que se llama particle.
       // La clase particle tiene las funciones o propiedades de la particula
       // las cuales las accedo usando ->.
@@ -258,7 +258,7 @@ find_cell_inner(Particle* p, const NeighborList* neighbor_list)
         "bound. You are likely running a subcritical multiplication problem "
         "with k-effective close to or greater than one.");
       }
-
+*/
       return true;
 
     } else if (c.type_ == FILL_UNIVERSE) {

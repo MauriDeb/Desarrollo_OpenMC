@@ -3,6 +3,9 @@
 #include <algorithm> // copy, min
 #include <cmath>     // log, abs, copysign
 #include <sstream>
+#include <fstream>
+#include <iostream>
+
 
 #include "openmc/physics_common.h"
 #include "openmc/bank.h"
@@ -262,59 +265,6 @@ Particle::transport()
         // p es un puntero a una clase publica que se llama particle.
         // La clase particle tiene las funciones o propiedades de la particula
         // las cuales las accedo usando ->.
-        const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
-        this->imp_last_ = this->imp_ == -1 ? 1.0: this->imp_;
-        if (c.importance_.size() > 1) {
-          this->imp_ = c.importance_[this->cell_instance_];
-        } else {
-          this->imp_ = c.importance_[0];
-        }
-        russian_roulette_importance(this);
-        if (this->imp_> this->imp_last_) {
-          int32_t n;
-          int32_t i;
-          double_t prob;
-          //std::cout << "Paso a una celda de mayor importancia: importance splitting\n";
-          //std::cout << p->imp_ << ", " << p->imp_last_ << "\n";
-          n = std::floor(this->imp_/this->imp_last_);
-          prob = this->imp_/this->imp_last_ - n;
-          //std::cout<<"n es igual a: "<<n<<". p es igual a: "<<prob<<"\n";
-
-          if (prn() < prob ) n++;
-
-          //std::cout << "Meto " << n-1 << " partículas al banco\n" ;
-          //std::cout << "Con peso " << p->wgt_*p->imp_last_/p->imp_ << " \n";
-
-          for (i=0; i<n-1;i++){
-              simulation::secondary_bank.emplace_back();
-              auto& bank {simulation::secondary_bank.back()};
-              bank.particle = this->type_;
-              bank.wgt = this->wgt_*this->imp_last_/this->imp_;
-              bank.r = this->r();
-              bank.u = this->u();
-              bank.E = this->E_;
-              this->n_bank_second_ += 1;
-          }
-          this->wgt_ = this->wgt_*this->imp_last_/this->imp_;
-
-        } else{
-          //std::cout << "Paso a una celda de menor importancia: Russian roulette\n";
-          if (prn() < this->imp_ / this->imp_last_) {
-            this->wgt_last_ = this->wgt_;
-            this->wgt_ = this->wgt_*this->imp_last_/this->imp_;
-            //std::cout<<p->wgt_last_<<" -> "<<p->wgt_<<"\n";
-          } else {
-            //std::cout<<"It's dead, Jim\n";
-            this->wgt_ = 0.;
-            this->wgt_last_ = 0.;
-            this->alive_ = false;
-          }
-        }
-        if (simulation::secondary_bank.size() >= 10000) {
-          fatal_error("The secondary particle bank appears to be growing without "
-          "bound. You are likely running a subcritical multiplication problem "
-          "with k-effective close to or greater than one.");
-        }
 
       // Set surface that particle is on and adjust coordinate levels
       surface_ = boundary.surface_index;
@@ -337,47 +287,36 @@ Particle::transport()
         this->cross_surface();
         event_ = EVENT_SURFACE;
       }
+
       // Score cell to cell partial currents
       if (!model::active_surface_tallies.empty()) {
         score_surface_tally(this, model::active_surface_tallies);
       }
+
+      russian_roulette(this); //Russian roulette is applied for population control.
+
+      if (this->alive_){// && settings::geometry_splitting){
+
+         this->get_importance(); // Last and actual importance are calculated.
+         this->geometry_splitting();// Geometry splitting is executed.
+
+      }
+
+      if(this->alive_ && settings::weight_window){
+
+          this->get_window(); // Weight values of the window is assigned to the particle
+          this->weight_window(); // Weight windows is executed
+
+      }
+
+      std::ofstream fout;
+      fout.open("caca.txt",std::ios::app);
+      fout<<this->imp_last_<<"\t ->"<< this-> imp_<<"\t\t"<<this->r().norm()<<"<-\t"<<this->r_last_.norm()<<"\t\t\t\t"<<this->n_coord_<<"\n";//<<" --IL "<< this->imp_last_<< " --IA "<< this-> imp_<<"\n|\n";
+      fout.close();
+
     } else {
       // ====================================================================
       // PARTICLE HAS COLLISION
-/*
-        //Implementation of Weight window variance reduction method.
-
-        if(settings::weight_window){
-            c.upper_weight_ = c.const_upp_weight_ * c.lower_weight_;
-            c.survival_weight_ = c.const_surv_ * c.lower_weight_;
-
-            int32_t n;
-            int32_t i;
-            double_t prob;
-
-            if(p->wgt_ > c.upper_weight_){
-                n = std::floor(p->wgt_/c.survival_weight_);
-                prob = (p->wgt_/c.survival_weight_) - n;
-
-                if (prn() < prob ) n++;
-
-                for (i=0; i<n-1;i++){
-                    simulation::secondary_bank.emplace_back();
-                    auto& bank {simulation::secondary_bank.back()};
-                    bank.particle = p->type_;
-                    bank.wgt = c.survival_weight_;
-                    bank.r = p->r();
-                    bank.u = p->u();
-                    bank.E = p->E_;
-                    p->n_bank_second_ += 1;
-                }
-              p->wgt_ = c.survival_weight_;
-            }
-            if(p->wgt_ < c.upper_weight_){
-                russian_roulette_weight_window(p, c.lower_weight_, c.survival_weight_);
-            }
-        }
-  */
 
       // Score collision estimate of keff
       if (settings::run_mode == RUN_MODE_EIGENVALUE &&
@@ -444,8 +383,16 @@ Particle::transport()
 
       // Score flux derivative accumulators for differential tallies.
       if (!model::active_tallies.empty()) score_collision_derivative(this);
-    }
 
+      if(this->alive_ && settings::weight_window){
+
+          this->get_window();
+          this->weight_window();
+
+      }
+
+    }
+//----------------------------------------------------------------------------//
     // If particle has too many events, display warning and kill it
     ++n_event;
     if (n_event == MAX_EVENTS) {
@@ -765,6 +712,128 @@ Particle::write_restart() const
     // Close file
     file_close(file_id);
   } // #pragma omp critical
+}
+
+void
+Particle::get_importance(){
+
+    this->imp_last_ = this->imp_; // Asigno la importancia como la de la celda anterior.
+
+    // Lo que tengo que hacer ahora es desplazar TINY_BIT a la particula, sacar la importancia
+    // en ese punto y volverlo a su posicion inicial. En cross_surface() se hace algo parecido
+    // y por lo tanto me voy a guiar por eso.
+
+    Position r {this->r()};
+    this->r() -= TINY_BIT * this->u();
+    const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
+    this->r() = r;
+
+    if (c.importance_.size() > 1) {
+      this->imp_ = c.importance_[this->cell_instance_];
+    } else {
+      this->imp_ = c.importance_[0];
+    }
+
+}
+
+void
+Particle::get_window(){
+
+    Position r {this->r()};
+    this->r() -= TINY_BIT * this->u();
+    const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
+    this->r() = r;
+
+    if (c.upper_weight_.size() > 1) {
+      this->upper_weight_ = c.upper_weight_[this->cell_instance_];
+      this->lower_weight_ = c.lower_weight_[this->cell_instance_];
+      this->survival_weight_ = c.survival_weight_[this->cell_instance_];
+    } else {
+      this->upper_weight_ = c.upper_weight_[0];
+      this->lower_weight_ = c.lower_weight_[0];
+      this->survival_weight_ = c.survival_weight_[0];
+    }
+}
+
+void
+Particle::geometry_splitting(){
+
+    if (this->imp_> this->imp_last_) {
+      int32_t n;
+      int32_t i;
+      double_t prob;
+      //std::cout << "Paso a una celda de mayor importancia: importance splitting\n";
+      //std::cout << p->imp_ << ", " << p->imp_last_ << "\n";
+      n = std::floor(this->imp_/this->imp_last_);
+      prob = this->imp_/this->imp_last_ - n;
+      //std::cout<<"n es igual a: "<<n<<". p es igual a: "<<prob<<"\n";
+
+      if (prn() < prob ) n++;
+
+      //std::cout << "Meto " << n-1 << " partículas al banco\n" ;
+      //std::cout << "Con peso " << p->wgt_*p->imp_last_/p->imp_ << " \n";
+
+      for (i=0; i<n-1;i++){
+          simulation::secondary_bank.emplace_back();
+          auto& bank {simulation::secondary_bank.back()};
+          bank.particle = this->type_;
+          bank.wgt = this->wgt_*this->imp_last_/this->imp_;
+          bank.r = this->r();
+          bank.u = this->u();
+          bank.E = this->E_;
+          this->n_bank_second_ += 1;
+      }
+      this->wgt_ = this->wgt_*this->imp_last_/this->imp_;
+
+    } else{
+      //std::cout << "Paso a una celda de menor importancia: Russian roulette\n";
+      if (prn() < this->imp_ / this->imp_last_) {
+        this->wgt_last_ = this->wgt_;
+        this->wgt_ = this->wgt_*this->imp_last_/this->imp_;
+        //std::cout<<p->wgt_last_<<" -> "<<p->wgt_<<"\n";
+      } else {
+        //std::cout<<"It's dead, Jim\n";
+        this->wgt_ = 0.;
+        this->wgt_last_ = 0.;
+        this->alive_ = false;
+      }
+    }
+    if (simulation::secondary_bank.size() >= 10000) {
+      fatal_error("The secondary particle bank appears to be growing without "
+      "bound. You are likely running a subcritical multiplication problem "
+      "with k-effective close to or greater than one.");
+    }
+}
+
+void
+Particle::weight_window(){
+
+        int32_t n;
+        int32_t i;
+        double_t prob;
+
+        if(this->wgt_ > this->upper_weight_){
+            n = std::floor(this->wgt_/this->survival_weight_);
+            prob = (this->wgt_/this->survival_weight_) - n;
+
+            if (prn() < prob ) n++;
+
+            for (i=0; i<n-1;i++){
+                simulation::secondary_bank.emplace_back();
+                auto& bank {simulation::secondary_bank.back()};
+                bank.particle = this->type_;
+                bank.wgt = this->survival_weight_;
+                bank.r = this->r();
+                bank.u = this->u();
+                bank.E = this->E_;
+                this->n_bank_second_ += 1;
+            }
+          this->wgt_ = this->survival_weight_;
+        }
+        if(this->wgt_ < this->upper_weight_){
+            russian_roulette_weight_window(this);
+        }
+
 }
 
 } // namespace openmc

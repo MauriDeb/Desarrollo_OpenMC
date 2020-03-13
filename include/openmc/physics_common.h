@@ -16,7 +16,7 @@ extern "C" void
 russian_roulette_importance(Particle* p);
 
 extern "C" void
-russian_roulette_weight_window(Particle* p, double weight_cutoff, double weight_survive);
+russian_roulette_weight_window(Particle* p);
 
 } // namespace openmc
 #endif // OPENMC_PHYSICS_COMMON_H
