@@ -91,6 +91,7 @@ int openmc_finalize()
   settings::source_separate = false;
   settings::source_write = true;
   settings::survival_biasing = false;
+  settings::weight_window = false;
   settings::temperature_default = 293.6;
   settings::temperature_method = TEMPERATURE_NEAREST;
   settings::temperature_multipole = false;
@@ -102,7 +103,7 @@ int openmc_finalize()
   settings::ufs_on = false;
   settings::urr_ptables_on = true;
   settings::verbosity = 7;
-  settings::weight_cutoff = 0.25;
+  settings::weight_cutoff = 0.5;
   settings::weight_survive = 1.0;
   settings::write_all_tracks = false;
   settings::write_initial_source = false;

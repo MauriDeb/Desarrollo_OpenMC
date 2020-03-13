@@ -58,6 +58,7 @@ bool source_latest           {false};
 bool source_separate         {false};
 bool source_write            {true};
 bool survival_biasing        {false};
+bool weight_window           {false};
 bool temperature_multipole   {false};
 bool trigger_on              {false};
 bool trigger_predict         {false};
@@ -96,6 +97,9 @@ int temperature_method {TEMPERATURE_NEAREST};
 double temperature_tolerance {10.0};
 double temperature_default {293.6};
 double importance_default {1.0};
+double lower_weight_default{0.25};
+double const_upp_weight_default {5.0};
+double const_surv_default{4.0};
 std::array<double, 2> temperature_range {0.0, 0.0};
 int trace_batch;
 int trace_gen;
@@ -103,7 +107,7 @@ int64_t trace_particle;
 std::vector<std::array<int, 3>> track_identifiers;
 int trigger_batch_interval {1};
 int verbosity {7};
-double weight_cutoff {0.25};
+double weight_cutoff {0.5};
 double weight_survive {1.0};
 
 } // namespace settings

@@ -110,6 +110,8 @@ class Settings(object):
         :batches: list of batches at which to write source
     survival_biasing : bool
         Indicate whether survival biasing is to be used
+    weight_windows : bool
+        Indicate whether weight windows is to be used
     tabular_legendre : dict
         Determines if a multi-group scattering moment kernel expanded via
         Legendre polynomials is to be converted to a tabular distribution or
@@ -179,6 +181,7 @@ class Settings(object):
         self._ptables = None
         self._seed = None
         self._survival_biasing = None
+        self._weight_window = None
 
         # Shannon entropy mesh
         self._entropy_mesh = None
@@ -279,6 +282,10 @@ class Settings(object):
     @property
     def survival_biasing(self):
         return self._survival_biasing
+
+    @property
+    def weight_window(self):
+        return self._weight_window
 
     @property
     def entropy_mesh(self):
@@ -523,6 +530,11 @@ class Settings(object):
     def survival_biasing(self, survival_biasing):
         cv.check_type('survival biasing', survival_biasing, bool)
         self._survival_biasing = survival_biasing
+
+    @weight_window.setter
+    def weight_window(self, weight_window):
+        cv.check_type('weight window', weight_window, bool)
+        self._weight_window = weight_window
 
     @cutoff.setter
     def cutoff(self, cutoff):
@@ -815,6 +827,11 @@ class Settings(object):
             element = ET.SubElement(root, "survival_biasing")
             element.text = str(self._survival_biasing).lower()
 
+    def _create_weight_window_subelement(self, root):
+        if self._weight_window is not None:
+            element = ET.SubElement(root, "weight_window")
+            element.text = str(self._weight_window).lower()
+
     def _create_cutoff_subelement(self, root):
         if self._cutoff is not None:
             element = ET.SubElement(root, "cutoff")
@@ -1045,6 +1062,11 @@ class Settings(object):
         if text is not None:
             self.survival_biasing = text in ('true', '1')
 
+    def _weight_window_from_xml_element(self, root):
+        text = get_text(root, 'weight_window')
+        if text is not None:
+            self.weight_window = text in ('true', '1')
+
     def _cutoff_from_xml_element(self, root):
         elem = root.find('cutoff')
         if elem is not None:
@@ -1189,6 +1211,7 @@ class Settings(object):
         self._create_ptables_subelement(root_element)
         self._create_seed_subelement(root_element)
         self._create_survival_biasing_subelement(root_element)
+        self._create_weight_window_subelement(root_element)
         self._create_cutoff_subelement(root_element)
         self._create_entropy_mesh_subelement(root_element)
         self._create_trigger_subelement(root_element)
@@ -1255,6 +1278,7 @@ class Settings(object):
         settings._ptables_from_xml_element(root)
         settings._seed_from_xml_element(root)
         settings._survival_biasing_from_xml_element(root)
+        settings._weight_window_from_xml_element(root)
         settings._cutoff_from_xml_element(root)
         settings._entropy_mesh_from_xml_element(root)
         settings._trigger_from_xml_element(root)

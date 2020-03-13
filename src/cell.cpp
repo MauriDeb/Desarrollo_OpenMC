@@ -382,7 +382,6 @@ CSGCell::CSGCell(pugi::xml_node cell_node)
     std::cout<<"cell = "<<(id_)<<", name = "<<name_<<", importance = "<<importance_[0]<<"\n";
   }
 
-
   // Read the region specification.
   std::string region_spec;
   if (check_for_node(cell_node, "region")) {

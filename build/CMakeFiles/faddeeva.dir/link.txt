@@ -1,0 +1,2 @@
+/usr/bin/ar qc lib/libfaddeeva.a  CMakeFiles/faddeeva.dir/vendor/faddeeva/Faddeeva.cc.o
+/usr/bin/ranlib lib/libfaddeeva.a

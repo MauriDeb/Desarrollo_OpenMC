@@ -166,7 +166,7 @@ public:
   //! T. The units are sqrt(eV).
   std::vector<double> sqrtkT_;
 
-  //! xxx Comentar
+  //! Define vector for cell importance.
   std::vector<double> importance_;
 
   //! Definition of spatial region as Boolean expression of half-spaces
