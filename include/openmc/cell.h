@@ -166,8 +166,15 @@ public:
   //! T. The units are sqrt(eV).
   std::vector<double> sqrtkT_;
 
-  //! xxx Comentar
+  //! Define vector for cell importance.
   std::vector<double> importance_;
+
+  //! Define variables for weight window variance reduction method.
+  std::vector<double> lower_weight_;
+  std::vector<double> const_upp_weight_;
+  std::vector<double> const_surv_;
+  std::vector<double> upper_weight_;
+  std::vector<double> survival_weight_;
 
   //! Definition of spatial region as Boolean expression of half-spaces
   std::vector<std::int32_t> region_;

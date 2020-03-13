@@ -1,0 +1,88 @@
+1) Defini en cell.py en la clase Cell una variable que se llama lower_weight.
+	Deje que por defecto este valor sea None, entonces despues voy a preguntar... if(lower_weight!=None) realizo el metodo, sino no hago nada y continuo.
+	El getter y el setter fueron configurados. Ahora puedo llamar a la propiedad de la celda como
+	celda.lower_weight y me da el valor(getter) y celda.lower_weight=ALGO asigno el valor ALGO como 
+	lower_weight. Ademas el codigo verifica que ALGO sea real y positivo.
+
+
+	Se implemento la propiedad de lower_weight, const_upp y const_surv al objeto celda. A cada uno se le implemento su setter y su getter, como asi tambien la escritura del geometry.xml y lectura
+	de un geometry.xml externo.
+
+2) En cell.h defini las 3 variables double lower_weight_, const_upp_weight_, const_surv_;. 
+
+3) En settings.h tenia una modificacion para el caso de geometry splitting que era poner un valor
+	por default. Pero como en el input de python si no se ingresan las tres variables, estas quedan como None.
+
+	A FUTURO: Habria que hacer que si no se definen las tres cosas no se pueda correr, es decir que se de cuenta el programa que definio 1 o 2 de las variables el usuario pero no todas, lo cual traeria un error.
+
+	Cree las variables por defecto. NOTAR QUE EN settings.cpp se definen los valores, aca solo defino a las variables default.
+
+4) En geometry_aux.cpp cargo valores por defectos a las celdas que no tienen cargadas. Se fija que 
+	un material la celda. Aca hay un tema que es, cual es un buen valor por defecto para poner a estar variables, es decir, si el usuario no inserta los datos para el W.W.. Segun el manual de
+	MCNP un buen valor para cons_upp_weight es 5. Por otro lado me parece que tiene sentido hacer que el const_surv_default sea igual a un valor tal que lower_weight * const_surv_default = 1 que seria el valor de peso de la particula al sobrevivir. Por ultimo me parece que el lower_weight no es mas que el weight cut off para el cual se realiza la ruleta rusa, asi que un valor por defecto de 0.25 me parece correcto.
+
+5) En setting.cpp defino los valores por defecto que hable recien.
+	Puse:
+			double lower_weight_default{0.25};     
+			double const_upp_weight_default {5.0};       
+			double const_surv_default{4.0};  
+
+6) En cell.cpp lo que hago es cargar de los archivos .xml los tres valores que fueron cargados. 
+	Ademas tambien calculo tambien los upper y survival weight.
+
+	Hay un if grande que lo que hace es verificar que el usuario especifico el uso de weight windows.
+
+7) Tengo problema con los valores por defecto porque yo no quiero que el programa cargue valores por defectos cuando en realidad uno no quiere ni usar el weight windows. Por esto puse como el survival biasing, run.weight_window = True el cual despues me aparece en settings.xml. Entonces la logica ahora seria:
+		1 - Ver si es True el valor.
+		2 - Si es False, no cargo nada y weight windows no aparece en la corrida.
+		3 - Si es True, cargo todos los datos de las celdas y en caso de que una celda no tenga cargado los valor, primero tengo que decir un mensaje de error y despues cargar por los valores por defecto que puse.
+
+		  if (settings::survival_biasing) {
+    russian_roulette(p);
+    if (!p->alive_) return;
+		  }
+		}
+
+	Este es el ejemplo de como usar el valor del setting del modo.
+
+	Fue copiado toda la implementacion que hay para el survival biasing exactamente para el weight window.
+
+	Para llamar al booleano de si se usa weight windows hago: settings::weight_window
+
+8) Bueno en este punto el codigo implementado toma todos los datos del usuario y los carga en el codigo fuente. Verifique que lo que lee el codigo fuente es lo que quiero con un cout.
+
+9) Ahora bien, tengo que hacer poner el codigo propiamente dicho del weight window. Para esto hay que implementar dos cosas. 
+	1- El momento en el que se hace weight window es despues de interactuar.
+		Entonces la onda seria que cuando se calcula el track de la particula, es decir: Si tengo un neutron de fuente, lo que quiero es que una vez que se le asigno peso, energia, direccion y posicion, se le haga el weight window. Despues, si el neutron tiene un scattering lo que quiero es lo mismo, una vez fijado la nueva energia, direccion,etc, que se le haga el weight window. Otro caso seria que la particula interactue con la materia absorbiendose, esto me lleva a la conclusion de que 
+
+		A las particulas les puede pasar lo siguiente:
+			1- Una fuente: Si este es el caso lo que quiero es que la particula nazca, se le calcule 
+				sus nuevas variables de estado y que despues de eso se le aplique weight window.
+			2- Fision: Al igual que con la fuente, lo que quiero es que todos los neutrones de fision
+				despues de haberle calculado sus variables de estado, se le aplique el ww.
+			3- Scattering: Lo mismo.
+			4- Absorcion: No quiero aplicar ww antes de la absorcion, yo quiero hacer ww siempre 	
+				despues de la colision. Esto tambien tiene logica porque esta particula que se absorbe en algun momento ya paso por un ww, porque puede provenir de fuente, fision,
+				scattering, reacciones (n,xn).
+			5- Reaccion (n,xn): Lo mismo que para el caso de las fisiones.
+		EN EL CODIGO SE APLICARA WW SI NO ME EQUIVOCO EN PHISYCS.CPP.
+
+	2- Se aplicara ww cuando una particula pase de una celda a otra.
+		EN EL CODIGO SE APLICARA WW EN EL MISMO LUGAR EN DONDE HICIMOS EL GEOMETRY SPLITTING.
+
+10) Ahora llega el momento en que discutimos COMO funciona el metodo y COMO se lo va a implementar.
+	Regla 1: WW aplicara RR cuando el peso de la particula sea menor que un peso lower_weight indicado por el usuario. Pero esta RR no es la misma que esta implementada, porque el peso que va a tener la particula si sobrevive a la RR es lower_weight * cons_surv ! 
+		IMPLEMENTACION: Hay dos formas, una es hacer una ruleta rusa especifica para este metodo y la otra es hacer que la ruleta rusa implementada tenga los datos de weight cut off y survival weight que requiere este metodo.
+
+	Regla 2: WW Dividira a la particulas que esten por encima del peso superior. No encuentro algun lugar en donde especifique que peso tienen que tener las particulas despues de dividirlas, solamente que al dividirlas tiene que tener un peso tal que esten dentro de la ventana. Algo logico me parece divirlas en una cantidad de particulas tal que tengan el mismo peso que las particulas que sobrevivan de la ruleta rusa.
+		IMPLEMENTACION: Lo que voy a hacer es lo mismo que cuando tengo importance splitting de una celda de menor imp a una de mayor imp. Es decir, saco la relacion de la cantidad de particulas nuevas(en general no es un numero entero), saco el floor y la prob de esto.
+		Entonces voy a tirar floor+1 particulas con probabilidad prob y floor particulas con probabilidad 1-prob. Todas las particulas van a tener peso igual a survival_weight.
+
+	Regla 3: Si el peso de la particula esta dentro de el rango de peso dado por los limites superiores e inferiores de la ventana, WW no hara nada.
+
+11) En la implementacion de la regla 2: Lo que hago es guardar todas las particulas en un banco menos 1 que es la que voy a seguir simulando.
+
+
+12) Tengo problemas para encontrar como define a la celda actual en la que se encuentra la particula.
+
+13) La funcion que se llama a la colision de una particula es en particle.cpp en la linea 289

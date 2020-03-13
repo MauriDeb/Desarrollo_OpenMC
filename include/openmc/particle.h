@@ -15,7 +15,6 @@
 #include "openmc/position.h"
 
 namespace openmc {
-
 //==============================================================================
 // Constants
 //==============================================================================
@@ -201,6 +200,18 @@ public:
   //! Transport a particle from birth to death
   void transport();
 
+  //! Calculate last and actual importance
+  void get_importance();
+
+  //! Calculate weight window of the particle
+  void get_window();
+
+  //! Geometry splitting variance reduction technique implentation
+  void geometry_splitting();
+
+  //! Geometry splitting variance reduction technique implentation
+  void weight_window();
+
   //! Cross a surface and handle boundary conditions
   void cross_surface();
 
@@ -280,9 +291,14 @@ public:
   double sqrtkT_ {-1.0};      //!< sqrt(k_Boltzmann * temperature) in eV
   double sqrtkT_last_ {0.0};  //!< last temperature
 
-  // Importance of current cell
+  // Importance of previous and actual cell.
   double imp_ {1.0};        //!< Importance
   double imp_last_ {1.0};   //!< Last importance
+
+  // Window of current cell the particle is at.
+  double upper_weight_ {-1};      //!< Upper weight
+  double lower_weight_ {-1};      //!< Lower weight
+  double survival_weight_ {-1};   //!< Survival weight
 
   // Statistical data
   int n_collision_ {0};  //!< number of collisions

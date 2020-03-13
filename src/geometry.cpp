@@ -119,7 +119,6 @@ find_cell_inner(Particle* p, const NeighborList* neighbor_list)
       }
     }
   }
-
   // Announce the cell that the particle is entering.
   if (found && (settings::verbosity >= 10 || simulation::trace)) {
     std::stringstream msg;
@@ -167,6 +166,39 @@ find_cell_inner(Particle* p, const NeighborList* neighbor_list)
         p->sqrtkT_ = c.sqrtkT_[p->cell_instance_];
       } else {
         p->sqrtkT_ = c.sqrtkT_[0];
+      }
+/*
+      //Implementation of Weight window variance reduction method.
+
+      if(settings::weight_window){
+          c.upper_weight_ = c.const_upp_weight_ * c.lower_weight_;
+          c.survival_weight_ = c.const_surv_ * c.lower_weight_;
+
+          int32_t n;
+          int32_t i;
+          double_t prob;
+
+          if(p->wgt_ > c.upper_weight_){
+              n = std::floor(p->wgt_/c.survival_weight_);
+              prob = (p->wgt_/c.survival_weight_) - n;
+
+              if (prn() < prob ) n++;
+
+              for (i=0; i<n-1;i++){
+                  simulation::secondary_bank.emplace_back();
+                  auto& bank {simulation::secondary_bank.back()};
+                  bank.particle = p->type_;
+                  bank.wgt = c.survival_weight_;
+                  bank.r = p->r();
+                  bank.u = p->u();
+                  bank.E = p->E_;
+                  p->n_bank_second_ += 1;
+              }
+            p->wgt_ = c.survival_weight_;
+          }
+          if(p->wgt_ < c.upper_weight_){
+              russian_roulette_weight_window(p, c.lower_weight_, c.survival_weight_);
+          }
       }
 
       // p es un puntero a una clase publica que se llama particle.
@@ -226,7 +258,7 @@ find_cell_inner(Particle* p, const NeighborList* neighbor_list)
         "bound. You are likely running a subcritical multiplication problem "
         "with k-effective close to or greater than one.");
       }
-
+*/
       return true;
 
     } else if (c.type_ == FILL_UNIVERSE) {
