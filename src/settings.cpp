@@ -97,9 +97,6 @@ int temperature_method {TEMPERATURE_NEAREST};
 double temperature_tolerance {10.0};
 double temperature_default {293.6};
 double importance_default {1.0};
-double lower_weight_default{0.25};
-double const_upp_weight_default {5.0};
-double const_surv_default{4.0};
 std::array<double, 2> temperature_range {0.0, 0.0};
 int trace_batch;
 int trace_gen;
@@ -416,6 +413,11 @@ void read_settings_xml()
   // Survival biasing
   if (check_for_node(root, "survival_biasing")) {
     survival_biasing = get_node_value_bool(root, "survival_biasing");
+  }
+
+  // Weight window
+  if (check_for_node(root, "weight_window")) {
+    weight_window = get_node_value_bool(root, "weight_window");
   }
 
   // Probability tables

@@ -302,6 +302,7 @@ Particle::transport()
 
       }
 
+
       std::ofstream fout;
       fout.open("caca.txt",std::ios::app);
       fout<<this->imp_last_<<"\t ->"<< this-> imp_<<"\t\t"<<this->r().norm()<<"<-\t"<<this->r_last_.norm()<<"\t\t\t\t"<<this->n_coord_<<"\n";//<<" --IL "<< this->imp_last_<< " --IA "<< this-> imp_<<"\n|\n";
@@ -729,7 +730,6 @@ Particle::get_importance(){
 
 }
 
-
 void
 Particle::geometry_splitting(){
 
@@ -779,6 +779,5 @@ Particle::geometry_splitting(){
       "with k-effective close to or greater than one.");
     }
 }
-
 
 } // namespace openmc

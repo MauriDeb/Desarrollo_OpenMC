@@ -92,7 +92,7 @@ class Cell(IDManagerMixin):
     ##! Aca lo que hago es, primero poner por default a I= 1 y segundo poder poner la importancia
     ##! como ej: pepito = openmc.Cell(bla, bla, importance= I), osea es una forma de settear I.
 
-    def __init__(self, cell_id=None, name='', fill=None, region=None, importance= 1.0, lower_weight= None, const_upp_weight= None, const_surv= None):
+    def __init__(self, cell_id=None, name='', fill=None, region=None, importance= 1.0):
         # Initialize Cell class attributes
         self.id = cell_id
         self.name = name
@@ -102,9 +102,6 @@ class Cell(IDManagerMixin):
         self._rotation_matrix = None
         self._temperature = None
         self._importance = importance
-        self._lower_weight = lower_weight
-        self._const_upp_weight = const_upp_weight
-        self._const_surv = const_surv
         self._translation = None
         self._paths = None
         self._num_instances = None
@@ -140,12 +137,6 @@ class Cell(IDManagerMixin):
         if self.fill_type == 'material':
             string += '\t{0: <15}=\t{1}\n'.format('Importance',
                                                   self.importance)
-
-        if self.fill_type == 'material':
-            string += '\t{0: <15}=\t{1}\n'.format('lower_weight', self.lower_weight)
-            string += '\t{0: <15}=\t{1}\n'.format('const_upp_weight', self.const_upp_weight)
-            string += '\t{0: <15}=\t{1}\n'.format('const_surv', self.const_surv)
-
 
         string += '{: <16}=\t{}\n'.format('\tTranslation', self.translation)
 
@@ -193,18 +184,6 @@ class Cell(IDManagerMixin):
     @property
     def importance(self):
         return self._importance
-
-    @property
-    def lower_weight(self):
-        return self._lower_weight
-
-    @property
-    def const_upp_weight(self):
-        return self._const_upp_weight
-
-    @property
-    def const_surv(self):
-        return self._const_surv
 
     @property
     def translation(self):
@@ -315,33 +294,6 @@ class Cell(IDManagerMixin):
 
         cv.check_greater_than('cell importance', importance, 0.0, True)
         self._importance = importance
-
-
-    @lower_weight.setter
-    def lower_weight(self, lower_weight):
-        # Make sure lower_weights are positive
-        cv.check_type('cell lower_weight', lower_weight, Real)
-
-        cv.check_greater_than('cell lower_weight', lower_weight, 0.0, True)
-        self._lower_weight = lower_weight
-
-    @const_upp_weight.setter
-    def const_upp_weight(self, const_upp_weight):
-        # Make sure lower_weights are positive
-        cv.check_type('cell const_upp_weight', const_upp_weight, Real)
-
-        cv.check_greater_than('cell const_upp_weight', const_upp_weight, 0.0, True)
-        self._const_upp_weight = const_upp_weight
-
-
-    @const_surv.setter
-    def const_surv(self, const_surv):
-        # Make sure lower_weights are positive
-        cv.check_type('cell const_surv', const_surv, Real)
-
-        cv.check_greater_than('cell const_surv', const_surv, 0.0, True)
-        self._const_surv = const_surv
-
 
     @region.setter
     def region(self, region):
@@ -589,15 +541,6 @@ class Cell(IDManagerMixin):
         if self.importance is not None:
             element.set("importance", str(self.importance))
 
-        if self.lower_weight is not None:
-            element.set("lower_weight", str(self.lower_weight))
-
-        if self.const_upp_weight is not None:
-            element.set("const_upp_weight", str(self.const_upp_weight))
-            
-        if self.const_surv is not None:
-            element.set("const_surv", str(self.const_surv))
-
         if self.translation is not None:
             element.set("translation", ' '.join(map(str, self.translation)))
 
@@ -665,18 +608,6 @@ class Cell(IDManagerMixin):
         imp = get_text(elem, 'importance')
         if imp is not None:
             c.importance = float(imp)
-
-        low_weight = get_text(elem, 'lower_weight')
-        if low_weight is not None:
-            c.lower_weight = float(low_weight)
-
-        const_upp_w = get_text(elem, 'const_upp_weight')
-        if const_upp_w is not None:
-            c.const_upp_weight = float(const_upp_w)
-            
-        const_s = get_text(elem, 'const_surv')
-        if const_s is not None:
-            c.const_surv = float(const_s)
                 
         # Add this cell to appropriate universe
         univ_id = int(get_text(elem, 'universe', 0))

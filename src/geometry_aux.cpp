@@ -205,28 +205,6 @@ assign_importances()
   }
 }
 
-//==============================================================================
-
-// Asigno importancia default si es que no fue cargada(revisar, porque cell.py ya lo hace).
-
-/*void
-assign_weight_window_variables()
-{
-  for (auto& c : model::cells) {
-    // Ignore non-material cells and cells with defined importance.
-    if (c->material_.size() == 0) continue;
-if (c->lower_weight_==)
-
-    // Use the global default importance.
-    c->lower_weight_ = lower_weight_default;
-    c->const_upp_weight_ = const_upp_weight_default;
-    c->const_surv_ = const_surv_default;
-
-  }
-}
-*/
-//==============================================================================
-
 void
 get_temperatures(std::vector<std::vector<double>>& nuc_temps,
   std::vector<std::vector<double>>& thermal_temps)
