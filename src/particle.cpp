@@ -237,6 +237,34 @@ Particle::transport()
 
     // Select smaller of the two distances
     double distance = std::min(boundary.distance, d_collision);
+    /*
+    std::cout<<"----------------------------\n";
+    std::cout<<"El ww setting es: "<<settings::weight_window<<"\n";
+    std::cout<<"El gs setting es: "<<settings::geometry_splitting<<"\n";
+    std::cout<<"El sb setting es: "<<settings::survival_biasing<<"\n";
+    std::cout<<"----------------------------\n\n";
+    */
+    /*
+    std::cout<<"----------------------------\n";
+    std::cout<<"--------Propiedades---------\n";
+    std::cout<<"--------imp: "<<this->imp_<<"------------\n";
+    std::cout<<"--------imp_last: "<<this->imp_last_<<"--------\n";
+    std::cout<<"--------wgt: "<<this->wgt_<<"------------\n";
+    std::cout<<"--------lower: "<<this->lower_weight_<<"------------\n";
+    std::cout<<"--------upper: "<<this->upper_weight_<<"------------\n";
+    std::cout<<"--------surv: "<<this->survival_weight_<<"------------\n";
+    std::cout<<"----------------------------\n";
+    */
+    //La idea es cargar la importancia de una particula nueva.
+    //geometry_splitting = 1 por si la importancia es para geometry splitting.
+    //survival_biasing = 1 por si la importancia es para la ruleta rusa del survival_biasing.
+    if (this->imp_ == -1 && (settings::geometry_splitting ==1 || settings::survival_biasing == 1)){
+        this->get_importance();
+    }
+
+    if (this->lower_weight_ == -1 && (settings::weight_window == 1)){
+        this->get_window();
+    }
 
     // Advance particle
     for (int j = 0; j < n_coord_; ++j) {
@@ -262,9 +290,8 @@ Particle::transport()
     if (d_collision > boundary.distance) {
       // ====================================================================
       // PARTICLE CROSSES SURFACE
-        // p es un puntero a una clase publica que se llama particle.
-        // La clase particle tiene las funciones o propiedades de la particula
-        // las cuales las accedo usando ->.
+
+      //std::cout<<"Cruzo una sup en: "<<this->r().norm()<<"\n";
 
       // Set surface that particle is on and adjust coordinate levels
       surface_ = boundary.surface_index;
@@ -293,30 +320,28 @@ Particle::transport()
         score_surface_tally(this, model::active_surface_tallies);
       }
 
+      this->get_importance(); // Last and actual importance are calculated.
       russian_roulette(this); //Russian roulette is applied for population control.
 
-      if (this->alive_){// && settings::geometry_splitting){
-
-         this->get_importance(); // Last and actual importance are calculated.
+      if (this->alive_ && (settings::geometry_splitting == 1)){
          this->geometry_splitting();// Geometry splitting is executed.
-
       }
 
-      if(this->alive_ && settings::weight_window){
-
+      if(this->alive_ && (settings::weight_window == 1)){
           this->get_window(); // Weight values of the window is assigned to the particle
           this->weight_window(); // Weight windows is executed
-
       }
-
+/*
       std::ofstream fout;
       fout.open("caca.txt",std::ios::app);
       fout<<this->imp_last_<<"\t ->"<< this-> imp_<<"\t\t"<<this->r().norm()<<"<-\t"<<this->r_last_.norm()<<"\t\t\t\t"<<this->n_coord_<<"\n";//<<" --IL "<< this->imp_last_<< " --IA "<< this-> imp_<<"\n|\n";
       fout.close();
-
+*/
     } else {
       // ====================================================================
       // PARTICLE HAS COLLISION
+
+      //std::cout<<"Hubo una colision en: "<<this->r().norm()<<"\n";
 
       // Score collision estimate of keff
       if (settings::run_mode == RUN_MODE_EIGENVALUE &&
@@ -338,6 +363,22 @@ Particle::transport()
         collision(this);
       } else {
         collision_mg(this);
+      }
+
+      // Reseteo las importancias porque la particula se absorbio. Si no hago esto la nueva particula
+      // queda con las importancias de la ultima.
+      if(!this->alive_ && (settings::geometry_splitting == 1 || settings::survival_biasing == 1)){
+          //std::cout<<"La particula fue absorbida.\n";
+          this->imp_ = -1;
+          this->imp_last_ = -1;
+      }
+
+      // Reseteo la ventana.
+      if(!this->alive_ && (settings::weight_window == 1)){
+          //std::cout<<"La particula fue absorbida.\n";
+          this->lower_weight_ = -1;
+          this->upper_weight_ = -1;
+          this->survival_weight_ = -1;
       }
 
       // Score collision estimator tallies -- this is done after a collision
@@ -384,11 +425,8 @@ Particle::transport()
       // Score flux derivative accumulators for differential tallies.
       if (!model::active_tallies.empty()) score_collision_derivative(this);
 
-      if(this->alive_ && settings::weight_window){
-
-          this->get_window();
+      if(this->alive_&& (settings::weight_window == 1)){
           this->weight_window();
-
       }
 
     }
@@ -399,6 +437,21 @@ Particle::transport()
       warning("Particle " + std::to_string(id_) +
         " underwent maximum number of events.");
       alive_ = false;
+
+      // Reseteo las importancias.
+      if(!this->alive_ && (settings::geometry_splitting == 1 || settings::survival_biasing == 1)){
+          //std::cout<<"La particula fue absorbida.\n";
+          this->imp_ = -1;
+          this->imp_last_ = -1;
+      }
+
+      // Reseteo la ventana.
+      if(!this->alive_ && (settings::weight_window == 1)){
+          //std::cout<<"La particula fue absorbida.\n";
+          this->lower_weight_ = -1;
+          this->upper_weight_ = -1;
+          this->survival_weight_ = -1;
+      }
     }
 
     // Check for secondary particles if this particle is dead
@@ -406,8 +459,10 @@ Particle::transport()
       // If no secondary particles, break out of event loop
       if (simulation::secondary_bank.empty()) break;
 
+      //std::cout<<"Entra a simular particulas del banco.\nHay: "<<simulation::secondary_bank.size()<<" particulas en el banco.\n";
       this->from_source(&simulation::secondary_bank.back());
       simulation::secondary_bank.pop_back();
+      //std::cout<<"Sale de simular particulas del banco.\nHay: "<<simulation::secondary_bank.size()<<" particulas en el banco.\n";
       n_event = 0;
 
       // Enter new particle in particle track file
@@ -440,8 +495,24 @@ Particle::cross_surface()
     // =======================================================================
     // PARTICLE LEAKS OUT OF PROBLEM
 
-    // Kill particle
-    alive_ = false;
+      //std::cout<<"Fuga\n";
+
+      // Kill particle
+      alive_ = false;
+      // Reseteo las importancias.
+      if(!this->alive_ && (settings::geometry_splitting == 1 || settings::survival_biasing == 1)){
+          //std::cout<<"La particula fue absorbida.\n";
+          this->imp_ = -1;
+          this->imp_last_ = -1;
+      }
+
+      // Reseteo la ventana.
+      if(!this->alive_ && (settings::weight_window == 1)){
+          //std::cout<<"La particula fue absorbida.\n";
+          this->lower_weight_ = -1;
+          this->upper_weight_ = -1;
+          this->survival_weight_ = -1;
+      }
 
     // Score any surface current tallies -- note that the particle is moved
     // forward slightly so that if the mesh boundary is on the surface, it is
@@ -645,6 +716,20 @@ Particle::mark_as_lost(const char* message)
 
   // Increment number of lost particles
   alive_ = false;
+  // Reseteo las importancias.
+  if(!this->alive_ && (settings::geometry_splitting == 1 || settings::survival_biasing == 1)){
+      //std::cout<<"La particula fue absorbida.\n";
+      this->imp_ = -1;
+      this->imp_last_ = -1;
+  }
+
+  // Reseteo la ventana.
+  if(!this->alive_ && (settings::weight_window == 1)){
+      //std::cout<<"La particula fue absorbida.\n";
+      this->lower_weight_ = -1;
+      this->upper_weight_ = -1;
+      this->survival_weight_ = -1;
+  }
   #pragma omp atomic
   simulation::n_lost_particles += 1;
 
@@ -717,22 +802,44 @@ Particle::write_restart() const
 void
 Particle::get_importance(){
 
-    this->imp_last_ = this->imp_; // Asigno la importancia como la de la celda anterior.
+    if (this->imp_ == -1.0){
+        //std::cout<<"Posicion de la particula con imp -1: "<<this->r().norm()<<", con direccion: "<<this->r()<<"\n";
+        Position r {this->r()};
+        this->r() += TINY_BIT * this->u();
+        const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
+        this->r() = r;
 
-    // Lo que tengo que hacer ahora es desplazar TINY_BIT a la particula, sacar la importancia
-    // en ese punto y volverlo a su posicion inicial. En cross_surface() se hace algo parecido
-    // y por lo tanto me voy a guiar por eso.
-
-    Position r {this->r()};
-    this->r() -= TINY_BIT * this->u();
-    const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
-    this->r() = r;
-
-    if (c.importance_.size() > 1) {
-      this->imp_ = c.importance_[this->cell_instance_];
-    } else {
-      this->imp_ = c.importance_[0];
+        if (c.importance_.size() > 1) {
+          this->imp_ = c.importance_[this->cell_instance_];
+        } else {
+          this->imp_ = c.importance_[0];
+        }
     }
+
+    else{
+
+        this->imp_last_ = this->imp_; // Asigno la importancia como la de la celda anterior.
+
+        // Lo que tengo que hacer ahora es desplazar TINY_BIT a la particula, sacar la importancia
+        // en ese punto y volverlo a su posicion inicial. En cross_surface() se hace algo parecido
+        // y por lo tanto me voy a guiar por eso.
+
+        Position r {this->r()};
+        this->r() += TINY_BIT * this->u();
+        const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
+        this->r() = r;
+
+
+        if (c.importance_.size() > 1) {
+          this->imp_ = c.importance_[this->cell_instance_];
+        } else {
+          this->imp_ = c.importance_[0];
+        }
+
+    }
+
+    //std::cout<<"salida de get_importance(). imp_last_: "<<this->imp_last_<<", imp: "<<this->imp_<<"\n";
+
 
 }
 
@@ -740,29 +847,38 @@ void
 Particle::get_window(){
 
     Position r {this->r()};
-    this->r() -= TINY_BIT * this->u();
+    this->r() += TINY_BIT * this->u();
     const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
     this->r() = r;
+/*
+    this->upper_weight_ = 3;
+    this->lower_weight_ = 1;
+    this->survival_weight_ = 2;
+*/
 
     if (c.upper_weight_.size() > 1) {
-      this->upper_weight_ = c.upper_weight_[this->cell_instance_];
+      this->upper_weight_ = c.lower_weight_[this->cell_instance_] * c.const_upp_weight_[this->cell_instance_];
       this->lower_weight_ = c.lower_weight_[this->cell_instance_];
-      this->survival_weight_ = c.survival_weight_[this->cell_instance_];
+      this->survival_weight_ = c.lower_weight_[this->cell_instance_] * c.const_surv_[this->cell_instance_];
     } else {
-      this->upper_weight_ = c.upper_weight_[0];
+      this->upper_weight_ = c.lower_weight_[0] * c.const_upp_weight_[0];
       this->lower_weight_ = c.lower_weight_[0];
-      this->survival_weight_ = c.survival_weight_[0];
+      this->survival_weight_ = c.lower_weight_[0] * c.const_surv_[0];
     }
+
+    //std::cout<<"Salida get_window(), lower: "<<this->lower_weight_<<", upper: "<<this->upper_weight_<<", surv: "<<this->survival_weight_<<"\n";
 }
 
 void
 Particle::geometry_splitting(){
 
+    //std::cout<<"En geometry splitting. imp_last_: "<<this->imp_last_<<", imp: "<<this->imp_<<"\n";
+
     if (this->imp_> this->imp_last_) {
       int32_t n;
       int32_t i;
       double_t prob;
-      //std::cout << "Paso a una celda de mayor importancia: importance splitting\n";
+      std::cout << "Paso a una celda de mayor importancia: importance splitting\n";
       //std::cout << p->imp_ << ", " << p->imp_last_ << "\n";
       n = std::floor(this->imp_/this->imp_last_);
       prob = this->imp_/this->imp_last_ - n;
@@ -784,6 +900,7 @@ Particle::geometry_splitting(){
           this->n_bank_second_ += 1;
       }
       this->wgt_ = this->wgt_*this->imp_last_/this->imp_;
+      std::cout<<"Cant part secund: "<<n_bank_second_<<", with wgt: "<<this->wgt_<<"\n";
 
     } else{
       //std::cout << "Paso a una celda de menor importancia: Russian roulette\n";
@@ -793,6 +910,8 @@ Particle::geometry_splitting(){
         //std::cout<<p->wgt_last_<<" -> "<<p->wgt_<<"\n";
       } else {
         //std::cout<<"It's dead, Jim\n";
+        this->imp_ = -1;
+        this->imp_last_ = -1;
         this->wgt_ = 0.;
         this->wgt_last_ = 0.;
         this->alive_ = false;
@@ -808,31 +927,34 @@ Particle::geometry_splitting(){
 void
 Particle::weight_window(){
 
-        int32_t n;
-        int32_t i;
-        double_t prob;
+    int32_t n;
+    int32_t i;
+    double_t prob;
 
-        if(this->wgt_ > this->upper_weight_){
-            n = std::floor(this->wgt_/this->survival_weight_);
-            prob = (this->wgt_/this->survival_weight_) - n;
+    //std::cout<<"Entra en weight_window(), wgt: "<<this->wgt_<<"\n";
 
-            if (prn() < prob ) n++;
+    if(this->wgt_ > this->upper_weight_){
+        n = std::floor(this->wgt_/this->survival_weight_);
+        prob = (this->wgt_/this->survival_weight_) - n;
 
-            for (i=0; i<n-1;i++){
-                simulation::secondary_bank.emplace_back();
-                auto& bank {simulation::secondary_bank.back()};
-                bank.particle = this->type_;
-                bank.wgt = this->survival_weight_;
-                bank.r = this->r();
-                bank.u = this->u();
-                bank.E = this->E_;
-                this->n_bank_second_ += 1;
-            }
-          this->wgt_ = this->survival_weight_;
+        if (prn() < prob ) n++;
+
+        for (i=0; i<n-1;i++){
+            simulation::secondary_bank.emplace_back();
+            auto& bank {simulation::secondary_bank.back()};
+            bank.particle = this->type_;
+            bank.wgt = this->survival_weight_;
+            bank.r = this->r();
+            bank.u = this->u();
+            bank.E = this->E_;
+            this->n_bank_second_ += 1;
         }
-        if(this->wgt_ < this->upper_weight_){
-            russian_roulette_weight_window(this);
-        }
+      this->wgt_ = this->survival_weight_;
+      //std::cout<<"Cant part secund: "<<n_bank_second_<<", with wgt: "<<this->wgt_<<"\n";
+    }
+    if(this->wgt_ < this->lower_weight_){
+        russian_roulette_weight_window(this);
+    }
 
 }
 

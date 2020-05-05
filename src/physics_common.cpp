@@ -33,6 +33,11 @@ void russian_roulette(Particle* p)
     } else {
       p->wgt_ = 0.;
       p->wgt_last_ = 0.;
+      p->lower_weight_ = -1;
+      p->upper_weight_ = -1;
+      p->survival_weight_ = -1;
+      p->imp_ = -1;
+      p->imp_last_ = -1;
       p->alive_ = false;
     }
   }
@@ -40,16 +45,20 @@ void russian_roulette(Particle* p)
 
 void russian_roulette_weight_window(Particle* p)
 {
-  if (p->wgt_ < p->lower_weight_) {
     if (prn() < p->wgt_ / p->survival_weight_) {
       p->wgt_last_ = p->wgt_;
       p->wgt_ = p->survival_weight_;
     } else {
+      //std::cout<<"It's dead, Jim.\n";
       p->wgt_ = 0.;
       p->wgt_last_ = 0.;
+      p->lower_weight_ = -1;
+      p->upper_weight_ = -1;
+      p->survival_weight_ = -1;
+      p->imp_ = -1;
+      p->imp_last_ = -1;
       p->alive_ = false;
-    }
-  }
+    } 
 }
 
 } //namespace openmc

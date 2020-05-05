@@ -167,98 +167,6 @@ find_cell_inner(Particle* p, const NeighborList* neighbor_list)
       } else {
         p->sqrtkT_ = c.sqrtkT_[0];
       }
-/*
-      //Implementation of Weight window variance reduction method.
-
-      if(settings::weight_window){
-          c.upper_weight_ = c.const_upp_weight_ * c.lower_weight_;
-          c.survival_weight_ = c.const_surv_ * c.lower_weight_;
-
-          int32_t n;
-          int32_t i;
-          double_t prob;
-
-          if(p->wgt_ > c.upper_weight_){
-              n = std::floor(p->wgt_/c.survival_weight_);
-              prob = (p->wgt_/c.survival_weight_) - n;
-
-              if (prn() < prob ) n++;
-
-              for (i=0; i<n-1;i++){
-                  simulation::secondary_bank.emplace_back();
-                  auto& bank {simulation::secondary_bank.back()};
-                  bank.particle = p->type_;
-                  bank.wgt = c.survival_weight_;
-                  bank.r = p->r();
-                  bank.u = p->u();
-                  bank.E = p->E_;
-                  p->n_bank_second_ += 1;
-              }
-            p->wgt_ = c.survival_weight_;
-          }
-          if(p->wgt_ < c.upper_weight_){
-              russian_roulette_weight_window(p, c.lower_weight_, c.survival_weight_);
-          }
-      }
-
-      // p es un puntero a una clase publica que se llama particle.
-      // La clase particle tiene las funciones o propiedades de la particula
-      // las cuales las accedo usando ->.
-      p->imp_last_ = p->imp_ == -1 ? 1.0: p->imp_;
-      if (c.importance_.size() > 1) {
-        p->imp_ = c.importance_[p->cell_instance_];
-      } else {
-        p->imp_ = c.importance_[0];
-      }
-      russian_roulette_importance(p);
-      if (p->imp_> p->imp_last_) {
-        int32_t n;
-        int32_t i;
-        double_t prob;
-
-        //std::cout << "Paso a una celda de mayor importancia: importance splitting\n";
-        //std::cout << p->imp_ << ", " << p->imp_last_ << "\n";
-        n = std::floor(p->imp_/p->imp_last_);
-        prob = p->imp_/p->imp_last_ - n;
-        //std::cout<<"n es igual a: "<<n<<". p es igual a: "<<prob<<"\n";
-
-
-        if (prn() < prob ) n++;
-
-        //std::cout << "Meto " << n-1 << " partículas al banco\n" ;
-        //std::cout << "Con peso " << p->wgt_*p->imp_last_/p->imp_ << " \n";
-
-        for (i=0; i<n-1;i++){
-            simulation::secondary_bank.emplace_back();
-            auto& bank {simulation::secondary_bank.back()};
-            bank.particle = p->type_;
-            bank.wgt = p->wgt_*p->imp_last_/p->imp_;
-            bank.r = p->r();
-            bank.u = p->u();
-            bank.E = p->E_;
-            p->n_bank_second_ += 1;
-        }
-        p->wgt_ = p->wgt_*p->imp_last_/p->imp_;
-
-      } else{
-        //std::cout << "Paso a una celda de menor importancia: Russian roulette\n";
-        if (prn() < p->imp_ / p->imp_last_) {
-          p->wgt_last_ = p->wgt_;
-          p->wgt_ = p->wgt_*p->imp_last_/p->imp_;
-          //std::cout<<p->wgt_last_<<" -> "<<p->wgt_<<"\n";
-        } else {
-          //std::cout<<"It's dead, Jim\n";
-          p->wgt_ = 0.;
-          p->wgt_last_ = 0.;
-          p->alive_ = false;
-        }
-      }
-      if (simulation::secondary_bank.size() >= 10000) {
-        fatal_error("The secondary particle bank appears to be growing without "
-        "bound. You are likely running a subcritical multiplication problem "
-        "with k-effective close to or greater than one.");
-      }
-*/
       return true;
 
     } else if (c.type_ == FILL_UNIVERSE) {
@@ -580,6 +488,30 @@ extern "C" int openmc_global_bounding_box(double* llc, double* urc) {
   urc[0] = bbox.xmax;
   urc[1] = bbox.ymax;
   urc[2] = bbox.zmax;
+
+  return 0;
+}
+
+extern "C" int
+openmc_distance_to_boundary(const double* xyz, const double* uvw, double* dist)
+{
+
+  Particle p;
+
+  p.r() = Position{xyz};
+  p.u() = Direction{uvw};
+
+  if (!find_cell(&p, false)) {
+    std::stringstream msg;
+    msg << "Could not find cell at position (" << p.r().x << ", " << p.r().y
+      << ", " << p.r().z << ").";
+    set_errmsg(msg);
+    return OPENMC_E_GEOMETRY;
+  }
+
+  auto info = distance_to_boundary(&p);
+
+  *dist = info.distance;
 
   return 0;
 }

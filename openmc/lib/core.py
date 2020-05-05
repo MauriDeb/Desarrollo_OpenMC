@@ -38,6 +38,9 @@ _dll.openmc_find_cell.argtypes = [POINTER(c_double*3), POINTER(c_int32),
                                   POINTER(c_int32)]
 _dll.openmc_find_cell.restype = c_int
 _dll.openmc_find_cell.errcheck = _error_handler
+_dll.openmc_distance_to_boundary.argtypes = [POINTER(c_double*3), POINTER(c_double*3), POINTER(c_double)]
+_dll.openmc_distance_to_boundary.restype = c_int
+_dll.openmc_distance_to_boundary.errcheck = _error_handler
 _dll.openmc_hard_reset.restype = c_int
 _dll.openmc_hard_reset.errcheck = _error_handler
 _dll.openmc_init.argtypes = [c_int, POINTER(POINTER(c_char)), c_void_p]
@@ -116,6 +119,14 @@ def finalize():
     """Finalize simulation and free memory"""
     _dll.openmc_finalize()
 
+def distance_to_boundary(xyz, uvw):
+
+    dist = c_double()
+
+
+    _dll.openmc_distance_to_boundary((c_double*3)(*xyz), (c_double*3)(*uvw), dist)
+
+    return dist.value
 
 def find_cell(xyz):
     """Find the cell at a given point

@@ -292,8 +292,8 @@ public:
   double sqrtkT_last_ {0.0};  //!< last temperature
 
   // Importance of previous and actual cell.
-  double imp_ {1.0};        //!< Importance
-  double imp_last_ {1.0};   //!< Last importance
+  double imp_ {-1.0};        //!< Importance
+  double imp_last_ {-1.0};   //!< Last importance
 
   // Window of current cell the particle is at.
   double upper_weight_ {-1};      //!< Upper weight

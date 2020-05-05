@@ -382,83 +382,70 @@ CSGCell::CSGCell(pugi::xml_node cell_node)
     std::cout<<"cell = "<<(id_)<<", name = "<<name_<<", importance = "<<importance_[0]<<"\n";
   }
 
-  if(settings::weight_window){
 
-      int i=0;
+  if (check_for_node(cell_node, "lower_weight")) {
+    lower_weight_ = get_node_array<double>(cell_node, "lower_weight");
+    lower_weight_.shrink_to_fit();
 
-      // Read the lower weight of weight windows from .xml
-      if (check_for_node(cell_node, "lower_weight")) {
-        //lower_weight_ = (std::stof(get_node_value(cell_node, "lower_weight")));
-        lower_weight_ = (get_node_array<double>(cell_node, "lower_weight"));
-        lower_weight_.shrink_to_fit();
-        std::cout<<lower_weight_;
-        //lower_weight_ = get_node_value(cell_node, "lower_weight");
-
-        // Make sure lower_weight_ is non-negative.
-
-
-        for(i=0; i<lower_weight_.size(); i++){
-
-            if (lower_weight_[i] < 0) {
-                  std::stringstream err_msg;
-                  err_msg << "Cell " << id_
-                          << " was specified with a negative lower weight for weight windows";
-                  fatal_error(err_msg);
-                }
-        }}
+    // Make sure all lower weight are non-negative.
+    for (auto lw : lower_weight_) {
+      if (lw < 0) {
+        std::stringstream err_msg;
+        err_msg << "Cell " << id_
+                << " was specified with a negative lower weight";
+        fatal_error(err_msg);
+      }
+    }}
 
 
+  if (check_for_node(cell_node, "const_upp_weight")) {
+    const_upp_weight_ = get_node_array<double>(cell_node, "const_upp_weight");
+    const_upp_weight_.shrink_to_fit();
 
-      // Read the constant for upper weight of weight windows from .xml
-      if (check_for_node(cell_node, "const_upp_weight")) {
-        const_upp_weight_ = get_node_array<double>(cell_node, "const_upp_weight");
+    // Make sure all lower weight are non-negative.
+    for (auto cuw : const_upp_weight_) {
+      if (cuw < 0) {
+        std::stringstream err_msg;
+        err_msg << "Cell " << id_
+                << " was specified with a negative lower weight";
+        fatal_error(err_msg);
+      }
+    }}
 
-        // Make sure const_upp_weight_ is non-negative.
+  if (check_for_node(cell_node, "const_surv")) {
+    const_surv_ = get_node_array<double>(cell_node, "const_surv");
+    const_surv_.shrink_to_fit();
 
-      for(i=0; i<lower_weight_.size(); i++){
+    // Make sure all lower weight are non-negative.
+    for (auto cs : const_surv_) {
+      if (cs < 0) {
+        std::stringstream err_msg;
+        err_msg << "Cell " << id_
+                << " was specified with a negative lower weight";
+        fatal_error(err_msg);
+      }
+    }}
 
-      if (const_upp_weight_[i] < 0) {
-            std::stringstream err_msg;
-            err_msg << "Cell " << id_
-                    << " was specified with a negative upper weight constant for weight windows";
-            fatal_error(err_msg);
-          }
-      }}
+  /*
+  std::cout<<const_surv_.size()<< const_upp_weight_.size()<< lower_weight_.size();
 
+  if ((const_surv_.size() == const_upp_weight_.size()) && (const_surv_.size() == lower_weight_.size())){
+      int i =0;
+      for (i = 0; i< lower_weight_.size(); i+=1){
 
-      // Read the constant for survival for weight windows from .xml
-      if (check_for_node(cell_node, "const_surv")) {
-        //const_surv_ = std::stof(get_node_value(cell_node, "const_surv"));
-          const_surv_ = (get_node_array<double>(cell_node, "const_surv_"));
-          const_surv_.shrink_to_fit();
+          upper_weight_[i] = const_upp_weight_[i] * lower_weight_[i];
+          survival_weight_[i] = const_surv_[i] * lower_weight_[i];
+      }
 
-        // Make sure const_surv_ is non-negative.
+  }else {
 
-      for(i=0; i<lower_weight_.size(); i++){
+      std::stringstream err_msg;
+      err_msg << "Cell " << id_
+              << " was specified with different size of ww constants";
+      fatal_error(err_msg);
 
-      if (const_surv_[i] < 0) {
-            std::stringstream err_msg;
-            err_msg << "Cell " << id_
-                    << " was specified with a negative survival weight constant for weight windows";
-            fatal_error(err_msg);
-          }
-      }}
-
-
-      if(lower_weight_.size() == const_upp_weight_.size()){
-
-          for(i=0; i<lower_weight_.size(); i++){
-
-              upper_weight_[i] = const_upp_weight_[i] * lower_weight_[i];
-              survival_weight_[i] = const_surv_[i] * lower_weight_[i];
-
-          }}
-      else{
-             std::cout<<"Lower weight vector has not the size of the upper constant.\n";
-          }
-
-      std::cout<<"cell = "<<(id_)<<", name = "<<name_<<", lower_weight = "<<lower_weight_<<", upper_weight_const = "<<const_upp_weight_<<", survival_const = "<<const_surv_<<"\n";
   }
+*/
 
   // Read the region specification.
   std::string region_spec;
@@ -1179,7 +1166,7 @@ extern "C" int
 openmc_cell_set_temperature(int32_t index, double T, const int32_t* instance)
 {
   if (index < 0 || index >= model::cells.size()) {
-    strcpy(openmc_err_msg, "Index in cells array is out of bounds.");
+    strcpy(openmc_err_msg, "Index in cells array is out of/* bounds.");
     return OPENMC_E_OUT_OF_BOUNDS;
   }
 

@@ -110,7 +110,7 @@ class Settings(object):
         :batches: list of batches at which to write source
     survival_biasing : bool
         Indicate whether survival biasing is to be used
-    weight_windows : bool
+    weight_window : bool
         Indicate whether weight windows is to be used
     tabular_legendre : dict
         Determines if a multi-group scattering moment kernel expanded via
@@ -182,6 +182,7 @@ class Settings(object):
         self._seed = None
         self._survival_biasing = None
         self._weight_window = None
+        self._geometry_splitting = None
 
         # Shannon entropy mesh
         self._entropy_mesh = None
@@ -286,6 +287,10 @@ class Settings(object):
     @property
     def weight_window(self):
         return self._weight_window
+
+    @property
+    def geometry_splitting(self):
+        return self._geometry_splitting
 
     @property
     def entropy_mesh(self):
@@ -535,6 +540,11 @@ class Settings(object):
     def weight_window(self, weight_window):
         cv.check_type('weight window', weight_window, bool)
         self._weight_window = weight_window
+
+    @geometry_splitting.setter
+    def geometry_splitting(self, geometry_splitting):
+        cv.check_type('geometry splitting', geometry_splitting, bool)
+        self._geometry_splitting = geometry_splitting
 
     @cutoff.setter
     def cutoff(self, cutoff):
@@ -832,6 +842,11 @@ class Settings(object):
             element = ET.SubElement(root, "weight_window")
             element.text = str(self._weight_window).lower()
 
+    def _create_geometry_splitting_subelement(self, root):
+        if self._geometry_splitting is not None:
+            element = ET.SubElement(root, "geometry_splitting")
+            element.text = str(self._geometry_splitting).lower()
+
     def _create_cutoff_subelement(self, root):
         if self._cutoff is not None:
             element = ET.SubElement(root, "cutoff")
@@ -1067,6 +1082,11 @@ class Settings(object):
         if text is not None:
             self.weight_window = text in ('true', '1')
 
+    def _geometry_splitting_from_xml_element(self, root):
+        text = get_text(root, 'geometry_splitting')
+        if text is not None:
+            self.geometry_splitting = text in ('true', '1')
+
     def _cutoff_from_xml_element(self, root):
         elem = root.find('cutoff')
         if elem is not None:
@@ -1212,6 +1232,7 @@ class Settings(object):
         self._create_seed_subelement(root_element)
         self._create_survival_biasing_subelement(root_element)
         self._create_weight_window_subelement(root_element)
+        self._create_geometry_splitting_subelement(root_element)
         self._create_cutoff_subelement(root_element)
         self._create_entropy_mesh_subelement(root_element)
         self._create_trigger_subelement(root_element)
@@ -1279,6 +1300,7 @@ class Settings(object):
         settings._seed_from_xml_element(root)
         settings._survival_biasing_from_xml_element(root)
         settings._weight_window_from_xml_element(root)
+        settings._geometry_splitting_from_xml_element(root)
         settings._cutoff_from_xml_element(root)
         settings._entropy_mesh_from_xml_element(root)
         settings._trigger_from_xml_element(root)

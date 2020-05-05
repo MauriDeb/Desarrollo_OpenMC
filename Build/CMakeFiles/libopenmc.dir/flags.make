@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_FLAGS = -fPIC   -fopenmp -O2 -std=c++14
 
-CXX_DEFINES = -DGIT_SHA1=\"29ed5070a45a6a33028f787948eac14035ff1c62\" -DGSL_THROW_ON_CONTRACT_VIOLATION -Dlibopenmc_EXPORTS
+CXX_DEFINES = -DGIT_SHA1=\"8641d35827531c7b27f3ab89a1b8d6b14522d83c\" -DGSL_THROW_ON_CONTRACT_VIOLATION -Dlibopenmc_EXPORTS
 
 CXX_INCLUDES = -I/home/mauricio/Proyecto/GitHub_OpenMC/Desarrollo/include -I/home/mauricio/anaconda3/include -I/home/mauricio/Proyecto/GitHub_OpenMC/Desarrollo/vendor/pugixml -I/home/mauricio/Proyecto/GitHub_OpenMC/Desarrollo/vendor/faddeeva -I/home/mauricio/Proyecto/GitHub_OpenMC/Desarrollo/vendor/xtensor/include -I/home/mauricio/Proyecto/GitHub_OpenMC/Desarrollo/vendor/xtl/include -I/home/mauricio/Proyecto/GitHub_OpenMC/Desarrollo/vendor/gsl/include 
 

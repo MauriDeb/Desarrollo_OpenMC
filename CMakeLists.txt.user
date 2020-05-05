@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.5.2, 2020-03-12T12:06:41. -->
+<!-- Written by QtCreator 4.5.2, 2020-05-04T20:38:10. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -347,7 +347,7 @@
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguation.Title">openmc</value>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.Arguments"></value>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory">/home/mauricio/Proyecto/Benchmarks/Shultis</value>
-    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory.default">/tmp/QtCreator-inOjj9/qtc-cmake-XXFt5ZD0/bin</value>
+    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory.default">/home/mauricio/openmc-qt/build-openmc-Desktop-Default/bin</value>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">openmc</value>

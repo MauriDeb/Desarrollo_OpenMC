@@ -44,6 +44,7 @@ extern bool source_separate;          //!< write source to separate file?
 extern bool source_write;             //!< write source in HDF5 files?
 extern bool survival_biasing;         //!< use survival biasing?
 extern bool weight_window;            //!< use weight window?
+extern bool geometry_splitting;      //!< use importace sampling?
 extern bool temperature_multipole;    //!< use multipole data?
 extern "C" bool trigger_on;           //!< tally triggers enabled?
 extern bool trigger_predict;          //!< predict batches for triggers?

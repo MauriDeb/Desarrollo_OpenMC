@@ -17,6 +17,23 @@ from openmc._xml import get_text
 from .mixin import IDManagerMixin
 
 
+class imp_sampling_grid():
+
+    def __init__(self,  grid_id= None, name=''):
+        # Initialize Cell class attributes
+        self.grid_id = grid_id
+        self.name = name
+        self.fill = fill
+        self._dimension = None
+        self._lower_left = None
+        self._upper_right = None
+        self._width = None
+
+
+
+
+
+
 class Cell(IDManagerMixin):
     """A region of space defined as the intersection of half-space created by
     quadric surfaces.
@@ -416,6 +433,25 @@ class Cell(IDManagerMixin):
                     'openmc.VolumeCalculation object'.format(self.id))
 
         return nuclides
+
+    def get_all_cells(self):
+        """Return all cells that are contained within this one if it is filled with a
+        universe or lattice
+
+        Returns
+        -------
+        cells : collections.orderedDict
+            Dictionary whose keys are cell IDs and values are :class:`Cell`
+            instances
+
+        """
+
+        cells = OrderedDict()
+
+        if self.fill_type in ('universe', 'lattice'):
+            cells.update(self.fill.get_all_cells())
+
+        return cells
 
     def get_all_cells(self):
         """Return all cells that are contained within this one if it is filled with a

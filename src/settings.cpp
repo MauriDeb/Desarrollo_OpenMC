@@ -59,6 +59,7 @@ bool source_separate         {false};
 bool source_write            {true};
 bool survival_biasing        {false};
 bool weight_window           {false};
+bool geometry_splitting      {false};
 bool temperature_multipole   {false};
 bool trigger_on              {false};
 bool trigger_predict         {false};
@@ -107,7 +108,7 @@ int64_t trace_particle;
 std::vector<std::array<int, 3>> track_identifiers;
 int trigger_batch_interval {1};
 int verbosity {7};
-double weight_cutoff {0.5};
+double weight_cutoff {0.25};
 double weight_survive {1.0};
 
 } // namespace settings
@@ -419,8 +420,13 @@ void read_settings_xml()
   }
 
   // Weight window
-  if (check_for_node(root, "weight_window")) {
+  if (check_for_node(root, "weight_window")) {    
     weight_window = get_node_value_bool(root, "weight_window");
+  }
+
+  // Geometry splitting
+  if (check_for_node(root, "geometry_splitting")) {
+    geometry_splitting = get_node_value_bool(root, "geometry_splitting");
   }
 
   // Probability tables
