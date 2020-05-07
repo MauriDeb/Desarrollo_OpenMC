@@ -109,7 +109,7 @@ class Cell(IDManagerMixin):
     ##! Aca lo que hago es, primero poner por default a I= 1 y segundo poder poner la importancia
     ##! como ej: pepito = openmc.Cell(bla, bla, importance= I), osea es una forma de settear I.
 
-    def __init__(self, cell_id=None, name='', fill=None, region=None, importance= 1.0, lower_weight= None, const_upp_weight= None, const_surv= None):
+    def __init__(self, cell_id=None, name='', fill=None, region=None, importance= 1.0, lower_weight= None, upper_weight= None, survival_weight= None):
         # Initialize Cell class attributes
         self.id = cell_id
         self.name = name
@@ -120,8 +120,8 @@ class Cell(IDManagerMixin):
         self._temperature = None
         self._importance = importance
         self._lower_weight = lower_weight
-        self._const_upp_weight = const_upp_weight
-        self._const_surv = const_surv
+        self._upper_weight = upper_weight
+        self._survival_weight = survival_weight
         self._translation = None
         self._paths = None
         self._num_instances = None
@@ -160,8 +160,8 @@ class Cell(IDManagerMixin):
 
         if self.fill_type == 'material':
             string += '\t{0: <15}=\t{1}\n'.format('lower_weight', self.lower_weight)
-            string += '\t{0: <15}=\t{1}\n'.format('const_upp_weight', self.const_upp_weight)
-            string += '\t{0: <15}=\t{1}\n'.format('const_surv', self.const_surv)
+            string += '\t{0: <15}=\t{1}\n'.format('upper_weight', self.upper_weight)
+            string += '\t{0: <15}=\t{1}\n'.format('survival_weight', self.survival_weight)
 
 
         string += '{: <16}=\t{}\n'.format('\tTranslation', self.translation)
@@ -216,12 +216,12 @@ class Cell(IDManagerMixin):
         return self._lower_weight
 
     @property
-    def const_upp_weight(self):
-        return self._const_upp_weight
+    def upper_weight(self):
+        return self._upper_weight
 
     @property
-    def const_surv(self):
-        return self._const_surv
+    def survival_weight(self):
+        return self._survival_weight
 
     @property
     def translation(self):
@@ -342,22 +342,22 @@ class Cell(IDManagerMixin):
         cv.check_greater_than('cell lower_weight', lower_weight, 0.0, True)
         self._lower_weight = lower_weight
 
-    @const_upp_weight.setter
-    def const_upp_weight(self, const_upp_weight):
+    @upper_weight.setter
+    def upper_weight(self, upper_weight):
         # Make sure lower_weights are positive
-        cv.check_type('cell const_upp_weight', const_upp_weight, Real)
+        cv.check_type('cell upper_weight', upper_weight, Real)
 
-        cv.check_greater_than('cell const_upp_weight', const_upp_weight, 0.0, True)
-        self._const_upp_weight = const_upp_weight
+        cv.check_greater_than('cell upper_weight', upper_weight, 0.0, True)
+        self._upper_weight = upper_weight
 
 
-    @const_surv.setter
-    def const_surv(self, const_surv):
+    @survival_weight.setter
+    def survival_weight(self, survival_weight):
         # Make sure lower_weights are positive
-        cv.check_type('cell const_surv', const_surv, Real)
+        cv.check_type('cell survival_weight', survival_weight, Real)
 
-        cv.check_greater_than('cell const_surv', const_surv, 0.0, True)
-        self._const_surv = const_surv
+        cv.check_greater_than('cell survival_weight', survival_weight, 0.0, True)
+        self._survival_weight = survival_weight
 
 
     @region.setter
@@ -453,24 +453,6 @@ class Cell(IDManagerMixin):
 
         return cells
 
-    def get_all_cells(self):
-        """Return all cells that are contained within this one if it is filled with a
-        universe or lattice
-
-        Returns
-        -------
-        cells : collections.orderedDict
-            Dictionary whose keys are cell IDs and values are :class:`Cell`
-            instances
-
-        """
-
-        cells = OrderedDict()
-
-        if self.fill_type in ('universe', 'lattice'):
-            cells.update(self.fill.get_all_cells())
-
-        return cells
 
     def get_all_materials(self):
         """Return all materials that are contained within the cell
@@ -628,11 +610,11 @@ class Cell(IDManagerMixin):
         if self.lower_weight is not None:
             element.set("lower_weight", str(self.lower_weight))
 
-        if self.const_upp_weight is not None:
-            element.set("const_upp_weight", str(self.const_upp_weight))
+        if self.upper_weight is not None:
+            element.set("upper_weight", str(self.upper_weight))
             
-        if self.const_surv is not None:
-            element.set("const_surv", str(self.const_surv))
+        if self.survival_weight is not None:
+            element.set("survival_weight", str(self.survival_weight))
 
         if self.translation is not None:
             element.set("translation", ' '.join(map(str, self.translation)))
@@ -706,13 +688,13 @@ class Cell(IDManagerMixin):
         if low_weight is not None:
             c.lower_weight = float(low_weight)
 
-        const_upp_w = get_text(elem, 'const_upp_weight')
-        if const_upp_w is not None:
-            c.const_upp_weight = float(const_upp_w)
+        upp_weight = get_text(elem, 'upper_weight')
+        if upp_weight is not None:
+            c.upper_weight = float(upp_weight)
             
-        const_s = get_text(elem, 'const_surv')
-        if const_s is not None:
-            c.const_surv = float(const_s)
+        sur_weight = get_text(elem, 'survival_weight')
+        if sur_weight is not None:
+            c.survival_weight = float(sur_weight)
                 
         # Add this cell to appropriate universe
         univ_id = int(get_text(elem, 'universe', 0))

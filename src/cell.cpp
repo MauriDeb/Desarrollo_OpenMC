@@ -398,13 +398,13 @@ CSGCell::CSGCell(pugi::xml_node cell_node)
     }}
 
 
-  if (check_for_node(cell_node, "const_upp_weight")) {
-    const_upp_weight_ = get_node_array<double>(cell_node, "const_upp_weight");
-    const_upp_weight_.shrink_to_fit();
+  if (check_for_node(cell_node, "upper_weight")) {
+    upper_weight_ = get_node_array<double>(cell_node, "upper_weight");
+    upper_weight_.shrink_to_fit();
 
     // Make sure all lower weight are non-negative.
-    for (auto cuw : const_upp_weight_) {
-      if (cuw < 0) {
+    for (auto uw : upper_weight_) {
+      if (uw < 0) {
         std::stringstream err_msg;
         err_msg << "Cell " << id_
                 << " was specified with a negative lower weight";
@@ -412,40 +412,19 @@ CSGCell::CSGCell(pugi::xml_node cell_node)
       }
     }}
 
-  if (check_for_node(cell_node, "const_surv")) {
-    const_surv_ = get_node_array<double>(cell_node, "const_surv");
-    const_surv_.shrink_to_fit();
+  if (check_for_node(cell_node, "survival_weight")) {
+    survival_weight_ = get_node_array<double>(cell_node, "survival_weight");
+    survival_weight_.shrink_to_fit();
 
     // Make sure all lower weight are non-negative.
-    for (auto cs : const_surv_) {
-      if (cs < 0) {
+    for (auto sw : survival_weight_) {
+      if (sw < 0) {
         std::stringstream err_msg;
         err_msg << "Cell " << id_
                 << " was specified with a negative lower weight";
         fatal_error(err_msg);
       }
     }}
-
-  /*
-  std::cout<<const_surv_.size()<< const_upp_weight_.size()<< lower_weight_.size();
-
-  if ((const_surv_.size() == const_upp_weight_.size()) && (const_surv_.size() == lower_weight_.size())){
-      int i =0;
-      for (i = 0; i< lower_weight_.size(); i+=1){
-
-          upper_weight_[i] = const_upp_weight_[i] * lower_weight_[i];
-          survival_weight_[i] = const_surv_[i] * lower_weight_[i];
-      }
-
-  }else {
-
-      std::stringstream err_msg;
-      err_msg << "Cell " << id_
-              << " was specified with different size of ww constants";
-      fatal_error(err_msg);
-
-  }
-*/
 
   // Read the region specification.
   std::string region_spec;

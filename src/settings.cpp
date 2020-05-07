@@ -59,6 +59,8 @@ bool source_separate         {false};
 bool source_write            {true};
 bool survival_biasing        {false};
 bool weight_window           {false};
+bool weight_window_surf_mode {false};
+bool weight_window_coll_mode {false};
 bool geometry_splitting      {false};
 bool temperature_multipole   {false};
 bool trigger_on              {false};
@@ -99,8 +101,8 @@ double temperature_tolerance {10.0};
 double temperature_default {293.6};
 double importance_default {1.0};
 double lower_weight_default{0.25};
-double const_upp_weight_default {5.0};
-double const_surv_default{4.0};
+double upper_weight_default {1.25};
+double survival_weight_default{0.625};
 std::array<double, 2> temperature_range {0.0, 0.0};
 int trace_batch;
 int trace_gen;
@@ -422,6 +424,25 @@ void read_settings_xml()
   // Weight window
   if (check_for_node(root, "weight_window")) {    
     weight_window = get_node_value_bool(root, "weight_window");
+  }
+
+  // Weight window mode.
+  if (check_for_node(root, "weight_window_mode")) {
+    std::string txt = get_node_value(root, "weight_window_mode");
+    std::cout<<"El texto es: "<<txt<<".\n";
+    if (txt == "both"){
+      weight_window_surf_mode = true;
+      weight_window_coll_mode = true;
+    } else if (txt == "surf"){
+      weight_window_surf_mode = true;
+      weight_window_coll_mode = false;
+    } else if (txt == "coll"){
+      weight_window_surf_mode = false;
+      weight_window_coll_mode = true;
+    } else{
+      weight_window_surf_mode = false;
+      weight_window_coll_mode = false;
+    }
   }
 
   // Geometry splitting

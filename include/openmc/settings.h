@@ -44,7 +44,9 @@ extern bool source_separate;          //!< write source to separate file?
 extern bool source_write;             //!< write source in HDF5 files?
 extern bool survival_biasing;         //!< use survival biasing?
 extern bool weight_window;            //!< use weight window?
-extern bool geometry_splitting;      //!< use importace sampling?
+extern bool weight_window_surf_mode;  //!< use weight window at surface crossing?
+extern bool weight_window_coll_mode;  //!< use weight window at every colision?
+extern bool geometry_splitting;       //!< use importace sampling?
 extern bool temperature_multipole;    //!< use multipole data?
 extern "C" bool trigger_on;           //!< tally triggers enabled?
 extern bool trigger_predict;          //!< predict batches for triggers?
@@ -85,8 +87,8 @@ extern double temperature_tolerance;     //!< Tolerance in [K] on choosing tempe
 extern double temperature_default;       //!< Default T in [K]
 extern double importance_default;       //!< Default importance
 extern double lower_weight_default;       //!< Default lower weight for weight window.
-extern double const_upp_weight_default;       //!< Default constant for upper weight for weight windows.
-extern double const_surv_default;       //!< Default constant for survival weight for weight windows.
+extern double upper_weight_default;       //!< Default upper weight for weight windows.
+extern double survival_weight_default;       //!< Default survival weight for weight windows.
 extern std::array<double, 2> temperature_range;  //!< Min/max T in [K] over which to load xs
 extern int trace_batch;                  //!< Batch to trace particle on
 extern int trace_gen;                    //!< Generation to trace particle on

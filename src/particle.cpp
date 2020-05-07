@@ -238,13 +238,16 @@ Particle::transport()
     // Select smaller of the two distances
     double distance = std::min(boundary.distance, d_collision);
     /*
+    std::cout<<"modos de ww\n";
+    std::cout<<"---surface----"<<settings::weight_window_surf_mode<<"--------\n";
+    std::cout<<"---colision----"<<settings::weight_window_coll_mode<<"--------\n\n";
+    */
+    /*
     std::cout<<"----------------------------\n";
     std::cout<<"El ww setting es: "<<settings::weight_window<<"\n";
     std::cout<<"El gs setting es: "<<settings::geometry_splitting<<"\n";
     std::cout<<"El sb setting es: "<<settings::survival_biasing<<"\n";
     std::cout<<"----------------------------\n\n";
-    */
-    /*
     std::cout<<"----------------------------\n";
     std::cout<<"--------Propiedades---------\n";
     std::cout<<"--------imp: "<<this->imp_<<"------------\n";
@@ -255,6 +258,7 @@ Particle::transport()
     std::cout<<"--------surv: "<<this->survival_weight_<<"------------\n";
     std::cout<<"----------------------------\n";
     */
+
     //La idea es cargar la importancia de una particula nueva.
     //geometry_splitting = 1 por si la importancia es para geometry splitting.
     //survival_biasing = 1 por si la importancia es para la ruleta rusa del survival_biasing.
@@ -327,7 +331,7 @@ Particle::transport()
          this->geometry_splitting();// Geometry splitting is executed.
       }
 
-      if(this->alive_ && (settings::weight_window == 1)){
+      if(this->alive_ && (settings::weight_window == 1) && (settings::weight_window_surf_mode == 1)){
           this->get_window(); // Weight values of the window is assigned to the particle
           this->weight_window(); // Weight windows is executed
       }
@@ -425,10 +429,9 @@ Particle::transport()
       // Score flux derivative accumulators for differential tallies.
       if (!model::active_tallies.empty()) score_collision_derivative(this);
 
-      if(this->alive_&& (settings::weight_window == 1)){
+      if(this->alive_&& (settings::weight_window == 1) && (settings::weight_window_coll_mode == 1)){
           this->weight_window();
       }
-
     }
 //----------------------------------------------------------------------------//
     // If particle has too many events, display warning and kill it
@@ -850,20 +853,15 @@ Particle::get_window(){
     this->r() += TINY_BIT * this->u();
     const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
     this->r() = r;
-/*
-    this->upper_weight_ = 3;
-    this->lower_weight_ = 1;
-    this->survival_weight_ = 2;
-*/
 
     if (c.upper_weight_.size() > 1) {
-      this->upper_weight_ = c.lower_weight_[this->cell_instance_] * c.const_upp_weight_[this->cell_instance_];
+      this->upper_weight_ = c.upper_weight_[this->cell_instance_];
       this->lower_weight_ = c.lower_weight_[this->cell_instance_];
-      this->survival_weight_ = c.lower_weight_[this->cell_instance_] * c.const_surv_[this->cell_instance_];
+      this->survival_weight_ = c.survival_weight_[this->cell_instance_];
     } else {
-      this->upper_weight_ = c.lower_weight_[0] * c.const_upp_weight_[0];
+      this->upper_weight_ = c.upper_weight_[0];
       this->lower_weight_ = c.lower_weight_[0];
-      this->survival_weight_ = c.lower_weight_[0] * c.const_surv_[0];
+      this->survival_weight_ = c.survival_weight_[0];
     }
 
     //std::cout<<"Salida get_window(), lower: "<<this->lower_weight_<<", upper: "<<this->upper_weight_<<", surv: "<<this->survival_weight_<<"\n";
@@ -878,7 +876,7 @@ Particle::geometry_splitting(){
       int32_t n;
       int32_t i;
       double_t prob;
-      std::cout << "Paso a una celda de mayor importancia: importance splitting\n";
+      //std::cout << "Paso a una celda de mayor importancia: importance splitting\n";
       //std::cout << p->imp_ << ", " << p->imp_last_ << "\n";
       n = std::floor(this->imp_/this->imp_last_);
       prob = this->imp_/this->imp_last_ - n;
@@ -900,7 +898,7 @@ Particle::geometry_splitting(){
           this->n_bank_second_ += 1;
       }
       this->wgt_ = this->wgt_*this->imp_last_/this->imp_;
-      std::cout<<"Cant part secund: "<<n_bank_second_<<", with wgt: "<<this->wgt_<<"\n";
+      //std::cout<<"Cant part secund: "<<n_bank_second_<<", with wgt: "<<this->wgt_<<"\n";
 
     } else{
       //std::cout << "Paso a una celda de menor importancia: Russian roulette\n";

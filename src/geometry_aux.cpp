@@ -207,7 +207,7 @@ assign_importances()
 
 //==============================================================================
 
-// Asigno importancia default si es que no fue cargada(revisar, porque cell.py ya lo hace).
+// VER...
 
 /*void
 assign_weight_window_variables()

@@ -171,8 +171,6 @@ public:
 
   //! Define variables for weight window variance reduction method.
   std::vector<double> lower_weight_;
-  std::vector<double> const_upp_weight_;
-  std::vector<double> const_surv_;
   std::vector<double> upper_weight_;
   std::vector<double> survival_weight_;
 

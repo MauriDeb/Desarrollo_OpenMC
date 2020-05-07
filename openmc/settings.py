@@ -181,6 +181,7 @@ class Settings(object):
         self._ptables = None
         self._seed = None
         self._survival_biasing = None
+        self._weight_window_mode = None
         self._weight_window = None
         self._geometry_splitting = None
 
@@ -283,6 +284,11 @@ class Settings(object):
     @property
     def survival_biasing(self):
         return self._survival_biasing
+
+    @property
+    def weight_window_mode(self):
+        """Mode for ww is set here. "both": for ww in colisions and surfaces crossing. "surf": for ww only in surfaces crossing. "colision": for ww only in colisions."""
+        return self._weight_window_mode
 
     @property
     def weight_window(self):
@@ -540,6 +546,11 @@ class Settings(object):
     def weight_window(self, weight_window):
         cv.check_type('weight window', weight_window, bool)
         self._weight_window = weight_window
+
+    @weight_window_mode.setter
+    def weight_window_mode(self, weight_window_mode):
+        cv.check_type('weight window', weight_window_mode, str)
+        self._weight_window_mode = weight_window_mode
 
     @geometry_splitting.setter
     def geometry_splitting(self, geometry_splitting):
@@ -842,6 +853,11 @@ class Settings(object):
             element = ET.SubElement(root, "weight_window")
             element.text = str(self._weight_window).lower()
 
+    def _create_weight_window_mode_subelement(self, root):
+        if self._weight_window_mode is not None:
+            element = ET.SubElement(root, "weight_window_mode")
+            element.text = str(self._weight_window_mode).lower()
+
     def _create_geometry_splitting_subelement(self, root):
         if self._geometry_splitting is not None:
             element = ET.SubElement(root, "geometry_splitting")
@@ -1082,6 +1098,11 @@ class Settings(object):
         if text is not None:
             self.weight_window = text in ('true', '1')
 
+    def _weight_window_mode_from_xml_element(self, root):
+        text = get_text(root, 'weight_window_mode')
+        if text is not None:
+            self.weight_window_mode = text
+
     def _geometry_splitting_from_xml_element(self, root):
         text = get_text(root, 'geometry_splitting')
         if text is not None:
@@ -1232,6 +1253,7 @@ class Settings(object):
         self._create_seed_subelement(root_element)
         self._create_survival_biasing_subelement(root_element)
         self._create_weight_window_subelement(root_element)
+        self._create_weight_window_mode_subelement(root_element)
         self._create_geometry_splitting_subelement(root_element)
         self._create_cutoff_subelement(root_element)
         self._create_entropy_mesh_subelement(root_element)
@@ -1300,6 +1322,7 @@ class Settings(object):
         settings._seed_from_xml_element(root)
         settings._survival_biasing_from_xml_element(root)
         settings._weight_window_from_xml_element(root)
+        settings._weight_window_from_xml_element_mode(root)
         settings._geometry_splitting_from_xml_element(root)
         settings._cutoff_from_xml_element(root)
         settings._entropy_mesh_from_xml_element(root)
