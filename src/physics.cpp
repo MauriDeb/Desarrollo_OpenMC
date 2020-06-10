@@ -139,7 +139,7 @@ void sample_neutron_reaction(Particle* p)
   }
 
   // Play russian roulette if survival biasing is turned on
-  if (settings::survival_biasing) {
+  if (settings::survival_biasing && (settings::weight_window_coll_mode == 0)) {
     russian_roulette(p);
     if (!p->alive_) return;
   }

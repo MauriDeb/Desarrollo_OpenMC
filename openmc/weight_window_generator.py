@@ -45,7 +45,6 @@ class weight_window_generator:
         self.bank_importance = []
         self.accepted_rel_err = False
         self.source_position = source_position
-        print(self.source_position)
 
         self.all_cells = self.geometry.get_all_cells().values()
 
@@ -312,9 +311,7 @@ class weight_window_generator:
 
         if (self.source_position != None):
             source_cell_id = self.which_cell(self.source_position)
-            print("El id es: ", source_cell_id)
             source_cell_importance = self.mgxs[source_cell_id][1]
-            print("La importancia es: ", source_cell_importance)
 
             if (source_cell_importance != 0):
                 factor = round(1/source_cell_importance, 4)
@@ -344,6 +341,16 @@ class weight_window_generator:
             cell.upper_weight = 5 * cell.lower_weight
             cell.survival_weight = 2.5 * cell.lower_weight
             cell.importance = importance
+
+    def results(self):
+        all_cells = self.geometry.get_all_cells().values()
+
+        results = []
+
+        for cell in all_cells:
+            results.append([cell.id, cell.importance, cell.lower_weight, cell.upper_weight, cell.survival_weight])
+
+        return results
 
 class points_generator:
     def __init__(self, sup_der= None, inf_izq= None, nx= 1, ny= 1, nz= 1):

@@ -325,10 +325,10 @@ Particle::transport()
       }
 
       this->get_importance(); // Last and actual importance are calculated.
-      russian_roulette(this); //Russian roulette is applied for population control.
 
       if (this->alive_ && (settings::geometry_splitting == 1)){
          this->geometry_splitting();// Geometry splitting is executed.
+         russian_roulette(this); //Russian roulette is applied for population control.
       }
 
       if(this->alive_ && (settings::weight_window == 1) && (settings::weight_window_surf_mode == 1)){
@@ -337,7 +337,7 @@ Particle::transport()
       }
 /*
       std::ofstream fout;
-      fout.open("caca.txt",std::ios::app);
+      fout.open("output.txt",std::ios::app);
       fout<<this->imp_last_<<"\t ->"<< this-> imp_<<"\t\t"<<this->r().norm()<<"<-\t"<<this->r_last_.norm()<<"\t\t\t\t"<<this->n_coord_<<"\n";//<<" --IL "<< this->imp_last_<< " --IA "<< this-> imp_<<"\n|\n";
       fout.close();
 */

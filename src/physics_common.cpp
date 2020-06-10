@@ -24,12 +24,13 @@ void russian_roulette(Particle* p)
 }
 */
 
+//Ruleta rusa para control poblacional.
 void russian_roulette(Particle* p)
 {
   if (p->wgt_ < settings::weight_cutoff / p->imp_ ) {
     if (prn() < p->wgt_ * p->imp_ / settings::weight_survive) {
-      p->wgt_ = settings::weight_survive / p->imp_ ;
       p->wgt_last_ = p->wgt_;
+      p->wgt_ = settings::weight_survive / p->imp_ ;
     } else {
       p->wgt_ = 0.;
       p->wgt_last_ = 0.;
