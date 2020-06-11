@@ -53,7 +53,6 @@ class weight_window_generator:
         self.mesh_definition()
         self.simulation()
         self.weight_window_setter()
-        openmc.lib.finalize()
         ############Fin ejecucion de funciones########
 
     def get_all_cells_info(self):
@@ -150,12 +149,15 @@ class weight_window_generator:
 
         #Recorro todos los key del diccionario, que son los ids de las celdas
         for cell_id in self.cell_dicc:
+            #print("simulation",cell_id,self.important_cell_id, len(self.cell_dicc[cell_id]))
 
             if cell_id == self.important_cell_id: #No analizo el caso en el que la celda sea la importante
                 continue
 
             if len(self.cell_dicc[cell_id])==0: #En caso de que no haya puntos en una celda que no analice
-                continue
+                msg = 'Cell doesnt have any point inside for the simulation.'
+                print('Cell', cell_id,'\n')
+                raise ValueError(msg)
 
             end_positions_cell = self.cell_dicc[cell_id]
             len_end_positions_cell = len(self.cell_dicc[cell_id])
@@ -211,7 +213,7 @@ class weight_window_generator:
                     random.shuffle(end_positions_cell)
 
 
-            #print("sali del while")
+            #print("sali del while", value, cell_id)
             self.mgxs[cell_id][1] = value
 
     def transport(self, versor, initial_position, final_position):
@@ -273,11 +275,11 @@ class weight_window_generator:
                 self.importance_aux = self.importance_aux * np.exp(-self.mgxs[step[1]][0]/step[0]) #exponencial
 
             if self.importance_aux < 1e-8:
+                print("estoy aca")
                 self.importance_aux = 0
                 break
 
         if self.importance_aux !=0:
-
             self.bank_importance.append(self.importance_aux)
 
 
@@ -316,11 +318,11 @@ class weight_window_generator:
             if (source_cell_importance != 0):
                 factor = round(1/source_cell_importance, 4)
             else:
-                msg = 'Source cell definition has cero importance.'
+                msg = 'Source cell definition has zero importance.'
                 raise ValueError(msg)
 
             for key in self.mgxs:
-                if (key != source_cell_id):
+                if (key != source_cell_id and self.mgxs[key][1]==self.mgxs[key][1]):
                     self.mgxs[key][1] = self.mgxs[key][1] * factor
                 else:
                     self.mgxs[key][1] = 1.0
@@ -328,8 +330,14 @@ class weight_window_generator:
 
 
     def weight_window_setter(self):
-        self.window_rescale()
+        #self.window_rescale()
         all_cells = self.geometry.get_all_cells().values()
+
+        #for cell in all_cells:
+            #print(cell.id)
+
+
+        print(self.mgxs)
 
         for cell in all_cells:
             importance = round(self.mgxs[cell.id][1],4)
