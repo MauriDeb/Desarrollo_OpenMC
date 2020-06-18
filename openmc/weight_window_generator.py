@@ -31,7 +31,7 @@ class weight_window_generator:
 
     """
 
-    def __init__(self, geometry, mesh, rel_err, important_cell_id, source_position = None, mgxs_lib = None, max_imp = 1500):
+    def __init__(self, geometry, mesh, rel_err, important_cell_id, source_position = None, mgxs_lib = None, max_imp = 1500, type = 'difusion'):
         self.cell_dicc = {}
         self.rel_err = rel_err
         self.mesh = list.copy(mesh)
@@ -45,6 +45,8 @@ class weight_window_generator:
         self.bank_importance = []
         self.accepted_rel_err = False
         self.source_position = source_position
+        self.type = type
+        self.rescale = rescale
 
         self.all_cells = self.geometry.get_all_cells().values()
 
@@ -71,10 +73,19 @@ class weight_window_generator:
         cell_get_mean_Xabs = cell_mgxs_data_abs.get_pandas_dataframe().mean()
         Xabs = cell_get_mean_Xabs.get('mean')
 
-        if (Xabs == 0):
-            L = math.inf
+        if (self.type == 'difusion'):
+            if (Xabs == 0):
+                L = math.inf
+            else:
+                L = (1/Xtotal) * np.sqrt(((Xtotal/Xabs)-1)/3)
+
+        elif (self.type == 'total'):
+            L = Xtotal
+
         else:
-            L = (1/Xtotal) * np.sqrt(((Xtotal/Xabs)-1)/3)
+            msg = 'Importance aproximation type is not \'total\' or \'difusion\'.'
+            raise ValueError(msg)
+
 
         if cell_id == self.important_cell_id:
             self.mgxs[cell_id] = [L, self.imp_cell_importance]
@@ -149,7 +160,7 @@ class weight_window_generator:
 
         #Recorro todos los key del diccionario, que son los ids de las celdas
         for cell_id in self.cell_dicc:
-            #print("simulation",cell_id,self.important_cell_id, len(self.cell_dicc[cell_id]))
+            print("simulation",cell_id)
 
             if cell_id == self.important_cell_id: #No analizo el caso en el que la celda sea la importante
                 continue
@@ -164,12 +175,16 @@ class weight_window_generator:
             self.accepted_rel_err = False
             #f = 0
             #print("Celda numero", cell_id," afuera while. Accepted?: ", self.accepted_rel_err)
+
             while self.accepted_rel_err == False:
+
+                comparator = 0.25
 
                 #print("Celda numero", cell_id, ", iteracion= ", f)
 
                 if len_end_positions_cell > len_important_cell:
-
+                    print("celda final: ", len_end_positions_cell)
+                    print("celda importante: ", len_important_cell)
                     for i in range(0, len_end_positions_cell):
 
                         if i>=len_important_cell-1:
@@ -187,7 +202,18 @@ class weight_window_generator:
 
                         self.transport(versor, initial_position, final_position)
 
+                        if (i == len_end_positions_cell * comparator and i!= len_end_positions_cell-1):
+                            value = self.bank_statistics()
+                            print(i)
+                            if self.accepted_rel_err == False:
+                                comparator = comparator + 0.25
+                            else:
+                                break
+
+
                 else:
+                    print("celda final: ", len_end_positions_cell)
+                    print("celda importante: ", len_important_cell)
 
                     for i in range(0, len_important_cell):
 
@@ -206,6 +232,14 @@ class weight_window_generator:
 
                         self.transport(versor, initial_position, final_position)
 
+                        if (i == len_important_cell * comparator and i!= len_important_cell-1):
+                            value = self.bank_statistics()
+                            print(i)
+                            if self.accepted_rel_err == False:
+                                comparator = comparator + 0.25
+                            else:
+                                break
+
                 value = self.bank_statistics()
                 #f = f + 1
                 if self.accepted_rel_err == False:
@@ -214,6 +248,7 @@ class weight_window_generator:
 
 
             #print("sali del while", value, cell_id)
+            self.bank_importance.clear()
             self.mgxs[cell_id][1] = value
 
     def transport(self, versor, initial_position, final_position):
@@ -288,10 +323,12 @@ class weight_window_generator:
         suma = builtins.sum(self.bank_importance)
 
         if n==0:
+            print("Nada en la bolsa")
             mean= 0
             rel_err = 0
 
         else:
+            print("Se encontraron valores en la bolsa")
             mean = suma/n
             sum_sq = builtins.sum(i*i for i in self.bank_importance)
             std_dev = np.sqrt((sum_sq/n - mean*mean) / (n-1)) if n!= 0 else 0
@@ -299,10 +336,10 @@ class weight_window_generator:
 
         if (rel_err <=self.rel_err):
             self.accepted_rel_err = True
-            self.bank_importance.clear()
-            #print("rel_err= ", rel_err)
+            print("Es verdadero el error: ", rel_err)
         else:
             self.accepted_rel_err = False
+            print("Es falso el error: ", rel_err)
 
         return mean
 
@@ -330,12 +367,8 @@ class weight_window_generator:
 
 
     def weight_window_setter(self):
-        #self.window_rescale()
+        self.window_rescale()
         all_cells = self.geometry.get_all_cells().values()
-
-        #for cell in all_cells:
-            #print(cell.id)
-
 
         print(self.mgxs)
 
