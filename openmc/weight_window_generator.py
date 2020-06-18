@@ -272,10 +272,10 @@ class weight_window_generator:
         self.importance_aux = self.imp_cell_importance
         for step in self.distances:
             if (step[1] != -1):#Esto es si recorre una distancia en vacio, porque no va a encontrar en una celda.
-                self.importance_aux = self.importance_aux * np.exp(-self.mgxs[step[1]][0]/step[0]) #exponencial
+                self.importance_aux = self.importance_aux * np.exp(-self.mgxs[step[1]][0]/step[0]) / step[0]#exponencial
 
             if self.importance_aux < 1e-8:
-                print("estoy aca")
+                #print("estoy aca")
                 self.importance_aux = 0
                 break
 

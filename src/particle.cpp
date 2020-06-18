@@ -324,7 +324,9 @@ Particle::transport()
         score_surface_tally(this, model::active_surface_tallies);
       }
 
-      this->get_importance(); // Last and actual importance are calculated.
+      if (this->imp_ == -1 && (settings::geometry_splitting ==1 || settings::survival_biasing == 1 || settings::weight_window == 1)){
+          this->get_importance();
+      }
 
       if (this->alive_ && (settings::geometry_splitting == 1)){
          this->geometry_splitting();// Geometry splitting is executed.
@@ -805,6 +807,8 @@ Particle::write_restart() const
 void
 Particle::get_importance(){
 
+    //std::cout<<"Entro al gi.\n";
+
     if (this->imp_ == -1.0){
         //std::cout<<"Posicion de la particula con imp -1: "<<this->r().norm()<<", con direccion: "<<this->r()<<"\n";
         Position r {this->r()};
@@ -848,7 +852,7 @@ Particle::get_importance(){
 
 void
 Particle::get_window(){
-
+//std::cout<<"Entro al gw.\n";
     Position r {this->r()};
     this->r() += TINY_BIT * this->u();
     const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
@@ -869,7 +873,7 @@ Particle::get_window(){
 
 void
 Particle::geometry_splitting(){
-
+    //std::cout<<"Entro al gs.\n";
     //std::cout<<"En geometry splitting. imp_last_: "<<this->imp_last_<<", imp: "<<this->imp_<<"\n";
 
     if (this->imp_> this->imp_last_) {
@@ -924,6 +928,7 @@ Particle::geometry_splitting(){
 
 void
 Particle::weight_window(){
+    //std::cout<<"Entro al ww.\n";
 
     int32_t n;
     int32_t i;
