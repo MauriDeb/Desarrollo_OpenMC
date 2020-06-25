@@ -4,6 +4,7 @@ import openmc.lib
 import random
 import math
 import numpy as np
+import timeit
 
 class weight_window_generator:
     """Weight windows are generated for every cell by using importance sampling.
@@ -31,7 +32,7 @@ class weight_window_generator:
 
     """
 
-    def __init__(self, geometry, mesh, rel_err, important_cell_id, source_position = None, mgxs_lib = None, max_imp = 1500, type = 'difusion'):
+    def __init__(self, geometry, mesh, rel_err, important_cell_id, source_position = None, mgxs_lib = None, max_imp = 1500, run_type = 'difusion'):
         self.cell_dicc = {}
         self.rel_err = rel_err
         self.mesh = list.copy(mesh)
@@ -45,17 +46,33 @@ class weight_window_generator:
         self.bank_importance = []
         self.accepted_rel_err = False
         self.source_position = source_position
-        self.type = type
-        self.rescale = rescale
+        self.type = run_type
+
+        self.max_iterator = 15
+        self.iterador = 0
 
         self.all_cells = self.geometry.get_all_cells().values()
 
         ############Ejecucion de funciones#############
+        tiempo1 = timeit.default_timer()
+        print("Entra a sacar info")
         self.get_all_cells_info()
+        tiempo2 = timeit.default_timer()
+        print("Entra a definir puntos")
         self.mesh_definition()
+        tiempo3 = timeit.default_timer()
+        print("Entra a simular")
         self.simulation()
+        tiempo4 = timeit.default_timer()
+        print("Entra al setter")
         self.weight_window_setter()
+        tiempo5 = timeit.default_timer()
         ############Fin ejecucion de funciones########
+
+        print("get info: ", tiempo2-tiempo1)
+        print("definicion mesh: ", tiempo3-tiempo2)
+        print("simulacion: ", tiempo4-tiempo3)
+        print("setter: ", tiempo5-tiempo4)
 
     def get_all_cells_info(self):
         for cell in self.all_cells:
@@ -65,22 +82,44 @@ class weight_window_generator:
 
 
     def get_mgxs_data(self, cell_id):
-        cell_mgxs_data_total = self.mgxs_info[cell_id]['total']
-        cell_get_mean_Xtotal = cell_mgxs_data_total.get_pandas_dataframe().mean()
-        Xtotal = cell_get_mean_Xtotal.get('mean')
 
-        cell_mgxs_data_abs = self.mgxs_info[cell_id]['absorption']
-        cell_get_mean_Xabs = cell_mgxs_data_abs.get_pandas_dataframe().mean()
-        Xabs = cell_get_mean_Xabs.get('mean')
+        if (self.type == 'total'):
+            try:
+                cell_mgxs_data_total = self.mgxs_info[cell_id]['total']
+                cell_get_mean_Xtotal = cell_mgxs_data_total.get_pandas_dataframe().mean()
+                Xtotal = cell_get_mean_Xtotal.get('mean')
+            except:
+                Xtotal = 0
+
 
         if (self.type == 'difusion'):
-            if (Xabs == 0):
+            try:
+                cell_mgxs_data_abs = self.mgxs_info[cell_id]['absorption']
+                cell_get_mean_Xabs = cell_mgxs_data_abs.get_pandas_dataframe().mean()
+                Xabs = cell_get_mean_Xabs.get('mean')
+            except:
+                Xabs = 0
+
+        if (self.type == 'difusion'):
+            try:
+                cell_mgxs_data_transport = self.mgxs_info[cell_id]['transport']
+                cell_get_mean_Xtr = cell_mgxs_data_transport.get_pandas_dataframe().mean()
+                Xtr = cell_get_mean_Xtr.get('mean')
+                print(Xtr)
+            except:
+                Xtr = 0
+
+        if (self.type == 'total'):
+            if (Xtotal!=0):
+                L = 1/Xtotal
+            else:
+                L = math.inf
+
+        elif (self.type == 'difusion'):
+            if (Xtr == 0 or Xabs == 0):
                 L = math.inf
             else:
-                L = (1/Xtotal) * np.sqrt(((Xtotal/Xabs)-1)/3)
-
-        elif (self.type == 'total'):
-            L = Xtotal
+                L = np.sqrt(1/(3*Xtr*Xabs))
 
         else:
             msg = 'Importance aproximation type is not \'total\' or \'difusion\'.'
@@ -142,6 +181,8 @@ class weight_window_generator:
 
         """
 
+        inicio_tiempo = timeit.default_timer()
+
         for i in range (0, len(self.mesh)):
 
             position = self.mesh[i]
@@ -153,6 +194,9 @@ class weight_window_generator:
         for key in self.cell_dicc:
             random.shuffle(self.cell_dicc[key])
 
+        fin_tiempo = timeit.default_timer()
+
+        #print("definicion de los puntos: ", fin_tiempo - inicio_tiempo)
 
     def simulation(self):
         len_important_cell = len(self.cell_dicc[self.important_cell_id])
@@ -160,14 +204,14 @@ class weight_window_generator:
 
         #Recorro todos los key del diccionario, que son los ids de las celdas
         for cell_id in self.cell_dicc:
-            print("simulation",cell_id)
+            #print("simulation",cell_id)
 
             if cell_id == self.important_cell_id: #No analizo el caso en el que la celda sea la importante
                 continue
 
             if len(self.cell_dicc[cell_id])==0: #En caso de que no haya puntos en una celda que no analice
                 msg = 'Cell doesnt have any point inside for the simulation.'
-                print('Cell', cell_id,'\n')
+                #print('Cell', cell_id,'\n')
                 raise ValueError(msg)
 
             end_positions_cell = self.cell_dicc[cell_id]
@@ -178,17 +222,17 @@ class weight_window_generator:
 
             while self.accepted_rel_err == False:
 
-                comparator = 0.25
+                comparator = 0.05
 
                 #print("Celda numero", cell_id, ", iteracion= ", f)
 
                 if len_end_positions_cell > len_important_cell:
-                    print("celda final: ", len_end_positions_cell)
-                    print("celda importante: ", len_important_cell)
+                    #print("celda final: ", len_end_positions_cell)
+                    #print("celda importante: ", len_important_cell)
                     for i in range(0, len_end_positions_cell):
 
                         if i>=len_important_cell-1:
-
+                            #print("entro a hacer un randrange. endlen>lenimp\n")
                             random_pos = random.randrange(len_important_cell)
                             initial_position = important_position_cell[random_pos - 1]
 
@@ -203,22 +247,23 @@ class weight_window_generator:
                         self.transport(versor, initial_position, final_position)
 
                         if (i == len_end_positions_cell * comparator and i!= len_end_positions_cell-1):
+                            #print("entro a sacar estadistica llegue al 5%")
                             value = self.bank_statistics()
-                            print(i)
+                            #print(i)
                             if self.accepted_rel_err == False:
-                                comparator = comparator + 0.25
+                                comparator = comparator + 0.05
                             else:
                                 break
 
 
                 else:
-                    print("celda final: ", len_end_positions_cell)
-                    print("celda importante: ", len_important_cell)
+                    #print("celda final: ", len_end_positions_cell)
+                    #print("celda importante: ", len_important_cell)
 
                     for i in range(0, len_important_cell):
-
+                        #print("iteracion numero: ", i,"\n")
                         if i>=len_end_positions_cell-1:
-
+                            #print("entro a hacer un randrange. endlen<lenimp\n")
                             random_pos = random.randrange(len_end_positions_cell)
                             final_position = end_positions_cell[random_pos - 1]
 
@@ -227,16 +272,21 @@ class weight_window_generator:
 
                         initial_position = important_position_cell[i]
 
+                        #print("calculo versor y distancia total")
+
                         versor = self.versor(initial_position, final_position)
                         total_distance = self.distance(initial_position, final_position)
+
+                        #print("Hago el transport de nuevo")
 
                         self.transport(versor, initial_position, final_position)
 
                         if (i == len_important_cell * comparator and i!= len_important_cell-1):
+                            #print("entro a sacar estadistica llegue al 5%")
                             value = self.bank_statistics()
-                            print(i)
+                            #print(i)
                             if self.accepted_rel_err == False:
-                                comparator = comparator + 0.25
+                                comparator = comparator + 0.05
                             else:
                                 break
 
@@ -247,7 +297,7 @@ class weight_window_generator:
                     random.shuffle(end_positions_cell)
 
 
-            #print("sali del while", value, cell_id)
+            print("sali del while", value, cell_id)
             self.bank_importance.clear()
             self.mgxs[cell_id][1] = value
 
@@ -261,10 +311,15 @@ class weight_window_generator:
             A list of lists, which each one have the distance and the cell id.
         """
         try:
+            #print("\nEn el try de transport")
             distance_to_boundary = openmc.lib.distance_to_boundary(initial_position, versor)
             distance_to_final_position = self.distance(initial_position, final_position)
 
+            #print("\nSaco las dos distancias")
+
             if (distance_to_final_position > distance_to_boundary):
+
+                #print("\nEntro al IF")
 
                 if len(self.distances) == 0:
                     self.distances.append([distance_to_boundary, self.which_cell(initial_position)])
@@ -275,13 +330,22 @@ class weight_window_generator:
 
                 initial_position = self.traslation(initial_position, versor, distance_to_boundary)
 
-                self.transport(versor, initial_position, final_position)
+
+                if (self.iterador <= self.max_iterator):
+                    self.iterador = self.iterador + 1
+                    self.transport(versor, initial_position, final_position)
+
+                else:
+                    self.iterador = 0
+                    self.distances.clear()
 
             else:
                 #Esto quiere decir que el punto final esta mas cerca que la otra sup.
                 #Hay un problema a veces con identificar la ultima celda antes de la final, por
                 #algun motivo que no logro entender. Por eso mando un if preguntando si es la misma
                 #que la final y si es asi, la retrocedo un pendejecimo y tomo la celda.
+
+                #print("\nEntro al else")
 
                 almost_last_cell = self.which_cell(initial_position)
                 last_cell = self.which_cell(final_position)
@@ -305,30 +369,36 @@ class weight_window_generator:
     ##step[1] es el id de la celda
     def importance_calculator(self):
         self.importance_aux = self.imp_cell_importance
+        #print("Calculo bien todas las distancias")
         for step in self.distances:
-            if (step[1] != -1):#Esto es si recorre una distancia en vacio, porque no va a encontrar en una celda.
-                self.importance_aux = self.importance_aux * np.exp(-self.mgxs[step[1]][0]/step[0]) / step[0]#exponencial
+            if (self.mgxs[step[1]][0] != math.inf):#Esto es si recorre una distancia en vacio, porque no va a encontrar en una celda.
+                #print("Entro a una zona de L no inf",  self.mgxs[step[1]][0])
+                self.importance_aux = self.importance_aux * np.exp(-self.mgxs[step[1]][0]/step[0])#exponencial
+                #print("importancia: ", self.importance_aux)
 
             if self.importance_aux < 1e-8:
                 #print("estoy aca")
                 self.importance_aux = 0
                 break
 
+        #print("salgo del for\n")
         if self.importance_aux !=0:
             self.bank_importance.append(self.importance_aux)
+            #print(self.bank_importance,"\n\n")
 
 
     def bank_statistics(self):
+        #print("entro al banco\n")
         n = len(self.bank_importance)
         suma = builtins.sum(self.bank_importance)
 
         if n==0:
-            print("Nada en la bolsa")
+            #print("Nada en la bolsa")
             mean= 0
             rel_err = 0
 
         else:
-            print("Se encontraron valores en la bolsa")
+            #print("Se encontraron valores en la bolsa")
             mean = suma/n
             sum_sq = builtins.sum(i*i for i in self.bank_importance)
             std_dev = np.sqrt((sum_sq/n - mean*mean) / (n-1)) if n!= 0 else 0
@@ -336,10 +406,10 @@ class weight_window_generator:
 
         if (rel_err <=self.rel_err):
             self.accepted_rel_err = True
-            print("Es verdadero el error: ", rel_err)
+            #print("Es verdadero el error: ", rel_err)
         else:
             self.accepted_rel_err = False
-            print("Es falso el error: ", rel_err)
+            #print("Es falso el error: ", rel_err)
 
         return mean
 
@@ -370,15 +440,15 @@ class weight_window_generator:
         self.window_rescale()
         all_cells = self.geometry.get_all_cells().values()
 
-        print(self.mgxs)
+        #print(self.mgxs)
 
         for cell in all_cells:
-            importance = round(self.mgxs[cell.id][1],4)
+            importance = self.mgxs[cell.id][1]
 
             if importance == 0:
                 cell.lower_weight = 1e4
             else:
-                cell.lower_weight = round(1/importance,4)
+                cell.lower_weight = 1/importance
             cell.upper_weight = 5 * cell.lower_weight
             cell.survival_weight = 2.5 * cell.lower_weight
             cell.importance = importance

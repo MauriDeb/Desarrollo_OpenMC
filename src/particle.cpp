@@ -324,9 +324,9 @@ Particle::transport()
         score_surface_tally(this, model::active_surface_tallies);
       }
 
-      if (this->imp_ == -1 && (settings::geometry_splitting ==1 || settings::survival_biasing == 1 || settings::weight_window == 1)){
-          this->get_importance();
-      }
+
+      this->get_importance();
+
 
       if (this->alive_ && (settings::geometry_splitting == 1)){
          this->geometry_splitting();// Geometry splitting is executed.
