@@ -295,7 +295,7 @@ Particle::transport()
       // ====================================================================
       // PARTICLE CROSSES SURFACE
 
-      //std::cout<<"Cruzo una sup en: "<<this->r().norm()<<"\n";
+      std::cout<<"Cruzo una sup en: "<<this->r().norm()<<"\n";
 
       // Set surface that particle is on and adjust coordinate levels
       surface_ = boundary.surface_index;
@@ -347,7 +347,7 @@ Particle::transport()
       // ====================================================================
       // PARTICLE HAS COLLISION
 
-      //std::cout<<"Hubo una colision en: "<<this->r().norm()<<"\n";
+      std::cout<<"Hubo una colision en: "<<this->r().norm()<<"\n";
 
       // Score collision estimate of keff
       if (settings::run_mode == RUN_MODE_EIGENVALUE &&
@@ -836,16 +836,20 @@ Particle::get_importance(){
         const Cell& c {*model::cells[this->coord_[this->n_coord_-1].cell]};
         this->r() = r;
 
-
         if (c.importance_.size() > 1) {
-          this->imp_ = c.importance_[this->cell_instance_];
+            if(c.material_[this->cell_instance_]!=-1){
+                this->imp_ = c.importance_[this->cell_instance_];
+            }
         } else {
-          this->imp_ = c.importance_[0];
+
+            if(c.material_[0]!=-1){
+                this->imp_ = c.importance_[0];
+            }
         }
 
     }
 
-    //std::cout<<"salida de get_importance(). imp_last_: "<<this->imp_last_<<", imp: "<<this->imp_<<"\n";
+//std::cout<<"salida de get_importance(). imp_last_: "<<this->imp_last_<<", imp: "<<this->imp_<<"\n";
 
 
 }
@@ -859,16 +863,18 @@ Particle::get_window(){
     this->r() = r;
 
     if (c.upper_weight_.size() > 1) {
+        if(c.material_[this->cell_instance_]!=-1){
       this->upper_weight_ = c.upper_weight_[this->cell_instance_];
       this->lower_weight_ = c.lower_weight_[this->cell_instance_];
-      this->survival_weight_ = c.survival_weight_[this->cell_instance_];
+      this->survival_weight_ = c.survival_weight_[this->cell_instance_];}
     } else {
+        if(c.material_[0]!=-1){
       this->upper_weight_ = c.upper_weight_[0];
       this->lower_weight_ = c.lower_weight_[0];
-      this->survival_weight_ = c.survival_weight_[0];
+      this->survival_weight_ = c.survival_weight_[0];}
     }
 
-    //std::cout<<"Salida get_window(), lower: "<<this->lower_weight_<<", upper: "<<this->upper_weight_<<", surv: "<<this->survival_weight_<<"\n";
+    std::cout<<"Salida get_window(), lower: "<<this->lower_weight_<<", upper: "<<this->upper_weight_<<", surv: "<<this->survival_weight_<<"\n";
 }
 
 void
